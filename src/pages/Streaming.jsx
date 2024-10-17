@@ -42,6 +42,7 @@ function Streaming() {
           console.log(event)
           if (event.data.size > 0) {
 // mediaRecorder.stream 
+//mediaRecorder.resquetData()
               socket.emit('video-stream', event.data);
           }
       };
