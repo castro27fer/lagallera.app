@@ -72,6 +72,7 @@ function Streaming() {
       const video = videoRef.current;
       if (video) {
         
+// pasar directo el data xq es in blob no hay necesidad de instanciar un blob...
           const blob = new Blob([data.arrayBuffer], { type: 'video/webm; codecs=vp8, opus' });
           const url = URL.createObjectURL(blob);
           console.log(url)
