@@ -44,6 +44,7 @@ function Streaming() {
 // mediaRecorder.stream 
 //mediaRecorder.resquetData()
 // event.data.arrayBuffer() // await promise
+// event.data.bytes() // await promise
               socket.emit('video-stream', event.data);
           }
       };
