@@ -1,10 +1,11 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Row } from 'react-bootstrap'
 import { io } from 'socket.io-client'
 
 function Streaming() {
 
   const path_api =  process.env.REACT_APP_URL_API;
+  const [play,set_play] = useState(false);
 
   const videoRef = React.createRef(null);
   // const canvas = React.createRef(null);
@@ -35,27 +36,32 @@ function Streaming() {
         audio: true,
       });
 
-      const mediaRecorder = new MediaRecorder(mediaStream);
+      if (MediaRecorder.isTypeSupported('video/webm; codecs=vp8')) {
+       console.log("codec soportado...")
+    } else {
+        console.error('Codec no soportado');
+    }
+
+      const mediaRecorder = new MediaRecorder(mediaStream,{
+        mimeType:"video/webm; codecs=vp8, opus",
+      });
       
       mediaRecorder.ondataavailable = (event) => {
 
-          console.log(event)
           if (event.data.size > 0) {
-// mediaRecorder.stream 
-//mediaRecorder.resquetData()
-// event.data.arrayBuffer() // await promise
-// event.data.bytes() // await promise
               socket.emit('video-stream', event.data);
           }
       };
 
-      mediaRecorder.start(100); // Enviar datos cada 100ms
+      mediaRecorder.start(10); // Enviar datos cada 100ms
 
-      mediaStream.getTracks().forEach(track => {
-          track.onended = () => {
-              mediaRecorder.stop();
-          };
-      });
+      videoRef.current.play();
+
+      // mediaStream.getTracks().forEach(track => {
+      //     track.onended = () => {
+      //         mediaRecorder.stop();
+      //     };
+      // });
 
       status.current.innerHTML = "Status: Start stream..."
 
@@ -72,12 +78,28 @@ function Streaming() {
       const video = videoRef.current;
       if (video) {
         
-// pasar directo el data xq es in blob no hay necesidad de instanciar un blob...
-          const blob = new Blob([data.arrayBuffer], { type: 'video/webm; codecs=vp8, opus' });
+        // pasar directo el data xq es in blob no hay necesidad de instanciar un blob...
+          // const blob = new Blob([data], { type: 'video/webm; codecs=vp8, opus' });
+
+          const blob = new Blob([data.ArrayBuffer], { type: 'video/webm; codecs=vp8, opus' });
+
+          console.log('Received data type:', blob);
+          console.log('Is Blob:', blob instanceof Blob); // Esto debe ser true
+
           const url = URL.createObjectURL(blob);
-          console.log(url)
-          video.src = url;
-          video.play();
+          // console.log(url)
+          video.src  = url;
+
+          if(play){
+            set_play(()=>true);
+            video.play();
+          }
+          
+          // Liberar el objeto URL después de usarlo
+          return () => {
+            URL.revokeObjectURL(url);
+        };
+
       }
     });
 
@@ -91,7 +113,8 @@ function Streaming() {
   return (
     <Row>
       <h1>Tramisión en Vivo</h1>
-      <video ref={videoRef} controls autoPlay></video>
+      {/* <img ref={videoRef} alt="" /> */}
+      <video ref={videoRef} controls autoPlay onError={(err) => console.log(err)}></video>
       <div ref={status} className='status'>Status : No Init</div>
 
       {/* <textarea ref={textarea}></textarea>
