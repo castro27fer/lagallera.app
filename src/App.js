@@ -5,7 +5,7 @@ import { Outlet } from 'react-router-dom';
 
 function App() {
   return (
-   <Container>
+   <Container fluid>
       <Outlet />
    </Container>
   );
