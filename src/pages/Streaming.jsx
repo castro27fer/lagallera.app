@@ -46,7 +46,7 @@ function Streaming() {
             max:1080,
           },
           frameRate:{
-            ideal:120,max:300,
+            ideal:60,max:70,
           },
         },
         audio: false,
@@ -68,35 +68,31 @@ function Streaming() {
           const captureImage = canvas.current.toDataURL("image/webp",100);
           socket.emit('video-stream', captureImage);
 
-        }, 10);
+        }, 200);
       });
 
-    //   if (MediaRecorder.isTypeSupported('video/webm; codecs=vp8')) {
-    //    console.log("codec soportado...")
-    // } else {
-    //     console.error('Codec no soportado');
-    // }
+   /*
+      const leftVideo = document.getElementById('leftVideo');
+      const rightVideo = document.getElementById('rightVideo');
 
-    //   const mediaRecorder = new MediaRecorder(mediaStream,{
-    //     mimeType:"video/webm; codecs=vp8, opus",
-    //   });
-      
-      // mediaRecorder.ondataavailable = (event) => {
+      leftVideo.addEventListener('canplay', () => {
+        let stream;
+        const fps = 0;
+        if (leftVideo.captureStream) {
+          stream = leftVideo.captureStream(fps);
+        } else if (leftVideo.mozCaptureStream) {
+          stream = leftVideo.mozCaptureStream(fps);
+        } else {
+          console.error('Stream capture is not supported');
+          stream = null;
+        }
+        rightVideo.srcObject = stream;
+      });
 
-      //     if (event.data.size > 0) {
-      //         socket.emit('video-stream', event.data);
-      //     }
-      // };
-
-      // mediaRecorder.start(10); // Enviar datos cada 100ms
-
-      // videoRef.current.play();
-
-      // mediaStream.getTracks().forEach(track => {
-      //     track.onended = () => {
-      //         mediaRecorder.stop();
-      //     };
-      // });
+      https://github.com/webrtc/
+      https://webrtc.org/getting-started/firebase-rtc-codelab?hl=es-419
+   
+   */
 
       status.current.innerHTML = "Status: Start stream..."
 
@@ -152,7 +148,7 @@ function Streaming() {
 
 
   return (<>
-    // <Container fluid>
+     
       <h1>Tramisión en Vivo</h1>
       
       <Row>
@@ -181,7 +177,7 @@ function Streaming() {
 
       <input type="text" ref={input} /> */}
      
-    // </Container>
+    
   </>)
 }
 

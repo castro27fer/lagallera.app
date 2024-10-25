@@ -11,7 +11,7 @@ function Receptor() {
   useEffect(()=>{
 
     socket.on('video-stream', (data) => {
-
+      console.log("llego...")
       imgRef.current.src = data;
       
     });
