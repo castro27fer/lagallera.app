@@ -1,38 +1,30 @@
 import React, { useEffect, useState } from 'react'
 import { Row, Col, Container } from 'react-bootstrap'
-import { io } from 'socket.io-client'
+// import { io } from 'socket.io-client'
 
 function Streaming() {
 
   const path_api =  process.env.REACT_APP_URL_API;
   const [play,set_play] = useState(false);
+  const [mediaStream,setMediaStream] = useState(null);
+  const pc1Local = new RTCPeerConnection();
+  const pc1Remote = new RTCPeerConnection();
 
   const videoRef = React.createRef(null);
+  const videoClientRef = React.createRef(null);
+
   const canvas = React.createRef(null);
   const status = React.createRef(null);
   const input = React.createRef(null);
   const imgRef = React.createRef(null);
   // let context = null;
   // const textarea = React.createRef(null);
+  let preferredVideoCodecMimeType = 'video/VP8';
 
-  const socket = io(path_api);
-
-  const sendMessage = (e)=>{
-
-    console.log(input.current);
-    // socket.emit("chatExample",input.current.value);
-    // context.current.drawImage(video.current,0,0,canvas.current.width,canvas.current.height);
-    // var url = canvas.current.toDataURL("image/webp");
-
-    // socket.emit("chatExample",url);
-
-  }
+  // const socket = io(path_api);
 
   const startCapture = async()=>{
     
-
-    try {
-
       navigator.mediaDevices.getDisplayMedia({
         video: {
           width:{
@@ -51,100 +43,95 @@ function Streaming() {
         },
         audio: false,
       })
-      .then(mediaStream =>{
+      .then(ms =>{
+        setMediaStream(()=>ms);
+        /*https://github.com/webrtc/
+        https://webrtc.org/getting-started/firebase-rtc-codelab?hl=es-419*/
 
-        
-        videoRef.current.srcObject = mediaStream;
-
-        const context = canvas.current.getContext("2d");
-        // console.log(canvas);
-        
-        setInterval(() => {
-
-          canvas.current.width = videoRef.current.videoWidth;
-          canvas.current.height = videoRef.current.videoHeight;
-
-          context.drawImage(videoRef.current,0,0,canvas.current.width,canvas.current.height);
-          const captureImage = canvas.current.toDataURL("image/webp",100);
-          socket.emit('video-stream', captureImage);
-
-        }, 200);
-      });
-
-   /*
-      const leftVideo = document.getElementById('leftVideo');
-      const rightVideo = document.getElementById('rightVideo');
-
-      leftVideo.addEventListener('canplay', () => {
-        let stream;
-        const fps = 0;
-        if (leftVideo.captureStream) {
-          stream = leftVideo.captureStream(fps);
-        } else if (leftVideo.mozCaptureStream) {
-          stream = leftVideo.mozCaptureStream(fps);
-        } else {
-          console.error('Stream capture is not supported');
-          stream = null;
-        }
-        rightVideo.srcObject = stream;
-      });
-
-      https://github.com/webrtc/
-      https://webrtc.org/getting-started/firebase-rtc-codelab?hl=es-419
-   
-   */
-
-      status.current.innerHTML = "Status: Start stream..."
-
-    } catch (err) {
-      console.error(`Error: ${err}`);
-    }
-
-    // return captureStream;
+      }).catch(err =>{
+        status.current.innerHTML =  `ERROR: ${err}`
+        console.log(`Error: ${err}`);
+      })
   }
 
-  // useEffect(()=>{
+  const clientConnection = async(e)=>{
 
+    const audioTracks = mediaStream.getAudioTracks();
+    const videoTracks = mediaStream.getVideoTracks();
     
+    if (audioTracks.length > 0) {
+      console.log(`Using audio device: ${audioTracks[0].label}`);
+    }
+    if (videoTracks.length > 0) {
+      console.log(`Using video device: ${videoTracks[0].label}`);
+    }
+   
+    //se cambia el evento ontrack el el que carga el TrackEvent en el objecto video enviado...
+    pc1Remote.ontrack = e => gotRemoteStream(e, videoClientRef.current);
 
+    console.log('pc1: created local and remote peer connection objects');
 
-  //   socket.on('video-stream', (data) => {
+    // pc2Local = new RTCPeerConnection();
+    // pc2Remote = new RTCPeerConnection();
+    // pc2Remote.ontrack = e => gotRemoteStream(e, video3);
+    // console.log('pc2: created local and remote peer connection objects');
 
-  //     // console.log(data);
-  //     imgRef.current.src = data;
-  //     // const video = videoRef.current;
-  //     // if (video) {
-        
-  //     //   // pasar directo el data xq es in blob no hay necesidad de instanciar un blob...
-  //     //     // const blob = new Blob([data], { type: 'video/webm; codecs=vp8, opus' });
+    //
+    mediaStream.getTracks().forEach(track => {
+      pc1Local.addTrack(track, mediaStream);
+      // pc2Local.addTrack(track, localStream);
+    });
+    await Promise.all([
+      negotiate(pc1Local, pc1Remote),
+      // negotiate(pc2Local, pc2Remote),
+    ]);
+}
 
-  //     //     const blob = new Blob([data.ArrayBuffer], { type: 'video/webm; codecs=vp8, opus' });
+const supportsSetCodecPreferences = window.RTCRtpTransceiver &&
+  'setCodecPreferences' in window.RTCRtpTransceiver.prototype;
 
-  //     //     console.log('Received data type:', blob);
-  //     //     console.log('Is Blob:', blob instanceof Blob); // Esto debe ser true
+const maybeSetCodecPreferences = (trackEvent) => {
 
-  //     //     const url = URL.createObjectURL(blob);
-  //     //     // console.log(url)
-  //     //     video.src  = url;
+  if (!supportsSetCodecPreferences) return;
 
-  //     //     if(play){
-  //     //       set_play(()=>true);
-  //     //       video.play();
-  //     //     }
-          
-  //     //     // Liberar el objeto URL después de usarlo
-  //     //     return () => {
-  //     //       URL.revokeObjectURL(url);
-  //     //   };
+  if (trackEvent.track.kind === 'video' && preferredVideoCodecMimeType) {
+    const {codecs} = RTCRtpReceiver.getCapabilities('video');
+    const selectedCodecIndex = codecs.findIndex(c => c.mimeType === preferredVideoCodecMimeType);
+    const selectedCodec = codecs[selectedCodecIndex];
+    codecs.splice(selectedCodecIndex, 1);
+    codecs.unshift(selectedCodec);
+    trackEvent.transceiver.setCodecPreferences(codecs);
+  }
+}
 
-  //     // }
-  //   });
+const negotiate = async(localPc, remotePc) => {
+  localPc.onicecandidate = e => remotePc.addIceCandidate(e.candidate);
+  remotePc.onicecandidate = e => localPc.addIceCandidate(e.candidate);
 
-  //   return () => {
-  //       socket.off('video-stream');
-  //   };
-  //   // eslint-disable-next-line
-  // },[])
+  await localPc.setLocalDescription();
+  await remotePc.setRemoteDescription(localPc.localDescription);
+  await remotePc.setLocalDescription();
+  await localPc.setRemoteDescription(remotePc.localDescription);
+}
+
+  const gotRemoteStream = (e, videoObject) => {
+    maybeSetCodecPreferences(e);
+    if (videoObject.srcObject !== e.streams[0]) {
+      videoObject.srcObject = e.streams[0];
+    }
+  }
+
+  useEffect(()=>{
+
+    if(mediaStream !== null){
+
+      videoRef.current.srcObject = mediaStream;
+      status.current.innerHTML = "Status: Start stream..."
+      console.log("estoy en bucle...")
+      
+    }
+
+  },[mediaStream])
 
 
   return (<>
@@ -158,11 +145,12 @@ function Streaming() {
           <video ref={videoRef} controls autoPlay onError={(err) => console.log(err)}></video>
           <div ref={status} className='status'>Status : No Init</div>
           <button onClick={startCapture}>Start Stream</button>
+          <button onClick={clientConnection}>Conectar Cliente 1</button>
         </Col>
 
         <Col>
-          <p>Canvas</p>
-          <canvas ref={canvas}></canvas>
+          <p>Recepción</p>
+          <video ref={videoClientRef} playsInline autoPlay></video>
           {/* <p>Recepción transmisión</p>
           <img ref={imgRef} alt="" /> */}
         </Col>

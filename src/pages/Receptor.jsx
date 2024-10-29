@@ -5,14 +5,14 @@ import { io } from 'socket.io-client'
 function Receptor() {
 
   const path_api =  process.env.REACT_APP_URL_API;
-  const imgRef = React.createRef(null);
+  const videoRef = React.createRef();
   const socket = io(path_api);
 
   useEffect(()=>{
 
     socket.on('video-stream', (data) => {
-      console.log("llego...")
-      imgRef.current.src = data;
+      // console.log("llego...")
+      videoRef.current.srcObject = data;
       
     });
 
@@ -27,7 +27,7 @@ function Receptor() {
     <Row>
       <Col>
         <p>Recepción transmisión</p>
-        <img ref={imgRef} alt="" />
+        <video ref={videoRef}></video>
         </Col>
     </Row>
 
