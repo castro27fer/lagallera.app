@@ -1,69 +1,18 @@
 import React, { useEffect, useState } from 'react'
-import { Row, Col, Container } from 'react-bootstrap'
-import { io } from 'socket.io-client'
+import { Row, Col, Container, Form, Button } from 'react-bootstrap'
+import emisor from '../modules/emisor';
 
 function Streaming() {
 
-  const API_SERVER =  process.env.REACT_APP_URL_API;
-  const STUN_SERVER = process.env.REACT_SERVER_STUN;
-
   const videoRef = React.createRef(null);
   const status = React.createRef(null);
+  const countClient = React.createRef(null)
 
-  let ICECandidates = [];
-  let mediaStream = null;
-  // const [socket,setSocket] = useState(null)
+  let stream = null;
 
-  const peerConnection = new RTCPeerConnection({
-    iceServers: [
-      { 
-        urls: [
-          `stun:stun.l.google.com:19302`
-        ]
-      }
-    ],
-    iceTransportPolicy:"all"
-  });
-
-  
-  let socket = null;
   // let preferredVideoCodecMimeType = 'video/VP8';
 
-  const startCapture = async()=>{
-    navigator.mediaDevices.getDisplayMedia({
-      video: {
-        width:{
-          // min: 1024, //not soport
-          ideal: 600,
-          max:1920,
-        },
-        height:{
-          // min:576, //not soport
-          ideal:400,
-          max:1080,
-        },
-        frameRate:{
-          ideal:60,max:70,
-        },
-      },
-      audio: false,
-    })
-    .then(ms => {
-      
-      mediaStream = ms;
-      // set_mediaStream(()=> ms); 
-      status.current.innerHTML = "Status: Start stream..."
-      videoRef.current.srcObject = mediaStream;
 
-      mediaStream.getTracks().forEach(track => {
-        peerConnection.addTrack(track, mediaStream);
-      });
-    })
-    .catch(err =>{
-      status.current.innerHTML =  `ERROR: ${err}`
-      console.log(`Error: ${err}`);
-    })
-  }
 
 // const supportsSetCodecPreferences = window.RTCRtpTransceiver &&
 //   'setCodecPreferences' in window.RTCRtpTransceiver.prototype;
@@ -89,99 +38,92 @@ function Streaming() {
   //   }
   // }
 
+  const [state,setState] = useState("New");
+  const [clients,setClients] = useState([]);
+  const [chats,setChats] = useState([]);
 
-  const createAnswer = async(desc) => {
+  const onState = (state) => setState(()=>state);
 
-    try{
-      console.log("receive offer");
-      console.log("load remote description")
-      await peerConnection.setRemoteDescription(desc);
-      console.log("create Answer")
-      const answer = await peerConnection.createAnswer();
-      console.log("load local description")
-      await peerConnection.setLocalDescription(answer);
-      await loadCandidates();
-
-      console.log("status",peerConnection.connectionState)
-    }
-    catch(err){
-      console.log("error al cargar setRemoteDescription",err);
-    }
-    console.log("send answer");
-    socket.emit("answer",peerConnection.localDescription);
+  const onCreateStreaming = () =>{
+    stream = new emisor();
+    stream.onState = onState;
+    stream.clientsConnected = clientsConnected
   }
 
-  const onCandidate = (event) => {
-    if(event.candidate){
-      socket.emit("candidate",{candidate: event.candidate, origin:"emisor"});
-    }
+  const clientsConnected = (client) =>{
+    setClients((prev_clients)=>{
+
+      prev_clients.push(client);
+      return prev_clients;
+      
+    })
   }
 
-  const loadCandidates = async()=>{
-    console.log("loader candidates")
-    for(let i = 0; i<ICECandidates.length;i++){
-      await peerConnection.addIceCandidate(ICECandidates[i]);
-    }
-  }
+  const connectWithMediaStream = ()=> stream.connectWithMediaStream();
 
-  // useEffect(()=>{
-  //   if(mediaStream !== null){
-  //     status.current.innerHTML = "Status: Start stream..."
-  //     videoRef.current.srcObject = mediaStream;
+  const startStream = () => stream.startStream();
 
-  //     mediaStream.getTracks().forEach(track => {
-  //       console.log("add track")
-  //       peerConnection.addTrack(track, mediaStream);
-  //     });
-  //   }
-    
+  const closeStream = () => stream.closeStream();
 
-  // },[mediaStream])
 
   useEffect(()=>{
-
-    peerConnection.onicecandidate = onCandidate;
     
-    if(socket === null){
-
-      socket = io(API_SERVER);
-      socket.on("getOffer",(desc)=>createAnswer(desc));
-      socket.on("candidate",(candidate)=>ICECandidates.push(candidate.candidate));
-    }
-    
-    setInterval(()=>{
-      console.log(peerConnection.connectionState)
-    },1000)
-
   },[])
 
-  
+  useEffect(()=>{
+    console.log(status);
+    status.current.innerHTML = state;
+  },[state]);
 
   return (<>
      
-      <h1>Tramisión en Vivo</h1>
+      <h1 className='text-center'>Tramisión en Vivo</h1>
       
       <Row>
 
-        <Col>
-          <p>Video Original</p>
-          <video ref={videoRef} controls autoPlay onError={(err) => console.log(err)}></video>
-          <div ref={status} className='status'>Status : No Init</div>
-          <button onClick={startCapture}>Start Stream</button>
-          {/* <button onClick={clientConnection}>Conectar Cliente 1</button> */}
+        <Col md='8' lg='8' xl='8'>
+          <video ref={videoRef} controls autoPlay onError={(err) => console.log(err)} width={"100%"}></video>
+          <div ref={status} className='status'></div>
+          <Button variant={'success'} className='me-2' onClick={onCreateStreaming}>Create Streaming</Button>
+          <Button variant={'primary'} className='me-2' onClick={connectWithMediaStream}>connect Medio</Button>
+          <Button variant={'warning'} className='me-2' onClick={startStream}>Start Stream</Button>
+          <Button variant={'danger'} className='me-2' onClick={closeStream}>Close Stream</Button>
+
+        </Col>
+
+        <Col md='4' lg='4' xl='4'>
+
+          <Row>
+            <Col>
+              <p>Connecteds (<span>{clients.length}</span>)</p>
+              <div hidden={clients.length === 0}>
+                {
+                  clients.map(client =>{
+
+                    return(<p key={client.id}>{client.name}</p>)
+
+                  })
+                }
+              </div>
+            </Col>
+          </Row>
+
+          <Row>
+            <p>Room of Chat</p>
+            <div>
+                {
+                  chats.map(chat =>{
+                    return(<p><strong>{chat.name}:</strong> {chat.message}</p>);
+                  })
+                }
+            </div>
+            <Form.Control type='text' placeholder='Entro a message' />
+            <Button variant='secondary' className='mt-2'>Send message</Button>
+          </Row>
+          
         </Col>
 
       </Row>
-      
-
-    
-
-        
-      {/* <textarea ref={textarea}></textarea>
-
-      <input type="text" ref={input} /> */}
-     
-    
   </>)
 }
 
