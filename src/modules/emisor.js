@@ -1,6 +1,5 @@
 import client from './client';
 import RTCConnectionClient from './RTCConnection'
-import axios from 'axios';
 
 export const MEDIA_STREAM_CONFIG = {
     video: {
@@ -19,7 +18,17 @@ export const MEDIA_STREAM_CONFIG = {
       },
     },
     audio: false,
-  }
+};
+
+const STATE = {
+  CREATED : "Created",
+  CREATING_THE_STREAMING : "creating_the_streaming"
+}
+
+const EVENT_SOCKET = {
+  CREATE_STREMING : "create_streming",
+  CHAT_ROOM :"chat_room"
+}
 
 class emisor extends client{
   
@@ -28,31 +37,41 @@ class emisor extends client{
       this.clients = [];
       this.mediaStream = null;
       // this.loadSocket();
-        this.state = "NEW";
+        this.state = STATE.CREATED;
 
-      this.initialStream();
+      this.listeningOffersOfConnections();
   
     }
   
-    initialStream = async() =>{
+    createStreaming = async() =>{
   
-      this.state = "SendRequest";
-      const response = await axios.post(`${this.HOST_SIGNAL}/api/stream`,{socketId:this.socket.id});
-      const { offerConnections, myRoom } = response.data;
-      this.listeningOffersOfConnections(offerConnections);
-      this.listeningMyRoom(myRoom);
+      this.state = STATE.CREATING_THE_STREAMING;
+    
+      const params = {
+        title:"title of streming",
+        description:"the description the of streming...."
+      }
+      this.socket.emit(EVENT_SOCKET.CREATE_STREMING,params);
 
-      this.state = "streamStart";
-  
+
     }
   
-    listeningOffersOfConnections = (offersOfConnections)=>{
-      this.socket.on(offersOfConnections,(connection)=>this.aceptOffer(connection));
+    listeningOffersOfConnections = ()=>{
+
+      this.socket.on("OffersOfConnection",(desc)=> this.aceptOffer(desc));
     }
+
+    // listeningTheChatRoom = () =>{
+    //   this.socket.on(EVENT_SOCKET.CHAT_ROOM,(params =>{
+    //     console.log(params.message);
+    //   }))
+    // }
+    
   
-    aceptOffer = async(roomOfConnection) =>{
+    aceptOffer = async(desc) =>{
   
-      const newClient = new RTCConnectionClient(this.socket,roomOfConnection);
+      const newClient = new RTCConnectionClient(this.socket);
+      newClient.establishConnection(desc);
       newClient.onconnectionstatechange =(event) =>{
         console.log(newClient.connectionState);
       }
@@ -80,4 +99,4 @@ class emisor extends client{
   
   }
 
-  export default emisor;
+export default emisor;

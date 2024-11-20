@@ -25,11 +25,11 @@ export const OFFER_OPTIONS = {
 
 class RTCConnectionClient extends RTCPeerConnection{
 
-  constructor(socket,room){
+  constructor(socket){
     super(CONFIG_CONNECTION_DEFAULT);
 
     this.socket = socket;
-    this.room = room;
+    this.room = "ROOM_RTCCONNECTION";
     this.ICECandidates = [];
     this.mediaStream = null;
 
