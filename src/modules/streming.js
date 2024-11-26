@@ -13,15 +13,18 @@ const EVENT_SOCKET = {
     CHAT_ROOM :"chat_room",
     SEND_OFFER_OF_CONNECTION : "send_offer_of_connection",
     OFFERS_OF_CONNECTION : "offers_of_connection",
-    ANSWER_OF_CONNECTION : "answer_of_connection"
+    SEND_ANSWER_OF_CONNECTION : "send_answer_of_connection",
+    ANSWER_OF_CONNECTION : "answer_of_connection",
+    SEND_CANDIDATES_OF_CONNECTION : "send_candidates_of_connection",
+    CANDIDATES_OF_CONNECTION : "candidates_of_connection",
 }
 
-const OPTIONS = {
-    OFFER     : "offer",
-    ANSWER    : "answer",
-    CANDIDATE : "candidate",
-    FINISH    : "finish"
-};
+// const OPTIONS = {
+//     OFFER     : "offer",
+//     ANSWER    : "answer",
+//     CANDIDATE : "candidate",
+//     FINISH    : "finish"
+// };
 
 const CONFIG_CONNECTION_DEFAULT = {
     iceServers: [
@@ -40,12 +43,33 @@ const OFFER_OPTIONS = {
     offerToReceiveVideo: 1 
 };
 
+export const MEDIA_STREAM_CONFIG = {
+    video: {
+      width:{
+        // min: 1024, //not soport
+        ideal: 1280,
+        max:1920,
+      },
+      height:{
+        // min:576, //not soport
+        ideal:600,
+        max:1080,
+      },
+      frameRate:{
+        ideal:60,max:70,
+      },
+    },
+    audio: false,
+};
+
 export class RTCConnectionClient extends RTCPeerConnection{
 
     ICECandidates = [];
 
-    constructor(props){
+    constructor(props,callback){
         super(props);
+
+        callback();
     }
 
     loadCandidates = async()=>{
@@ -53,26 +77,51 @@ export class RTCConnectionClient extends RTCPeerConnection{
           await this.addIceCandidate(this.ICECandidates[i]);
         }
     }
-    
-    onicecandidate = (event) => {
-        if(event.candidate){
-           this.ICECandidates.push(event.candidate);
-        }
-    }
 
 }
 
-export class client {
+export class Client {
+
+    HOST_SIGNAL = process.env.REACT_APP_URL_API;
+    HOST_STUN = process.env.REACT_APP_SERVER_STUN;
+    HOST_STURN = process.env.REACT_APP_SERVER_STURN
+
+    id = null;
+    state = "New";
+    socket = null;
+    ICECandidates = [];
 
     constructor(){
-      this.HOST_SIGNAL = process.env.REACT_APP_URL_API;
-      this.HOST_STUN = process.env.REACT_SERVER_STUN;
-      this.HOST_STURN = process.env.REACT_SERVER_STURN
+    
       this.socket = io(this.HOST_SIGNAL);
       this.state = STATE.CREATED;
-      this.ICECandidates = [];
+
+      this.eventoSocket();
     }
-  
+
+    eventoSocket = () => {
+        this.socket.on("connect", () => {
+            this.id = this.socket.id;
+            this.onConnect();
+        });
+
+        this.socket.on("connect_error", (error) => {
+            if (this.socket.active) {
+              // temporary failure, the socket will automatically try to reconnect
+            } else {
+              // the connection was denied by the server
+              // in that case, `socket.connect()` must be manually called in order to reconnect
+              console.log(error.message);
+            }
+        });
+
+        this.socket.on("disconnect", (reason, details) => {
+            console.log("disconnect......")
+        });
+    }
+
+    onConnect = ()=> {};
+
     sendMessage = (message) => {
       this.socket.emit(EVENT_SOCKET.CHAT_ROOM,{ message });
     };
@@ -83,7 +132,7 @@ export class client {
 
 }
 
-export class receptor extends client{
+export class Receptor extends Client{
 
     ICECandidates = [];
 
@@ -100,65 +149,112 @@ export class receptor extends client{
       
         this.state = STATE.CONNECTIONG_WITH_THE_STREAMING;
 
-        this.peerConnection = new RTCConnectionClient(CONFIG_CONNECTION_DEFAULT);
+        this.peerConnection = new RTCPeerConnection(CONFIG_CONNECTION_DEFAULT);
+
+        this.peerConnection.onconnectionstatechange =(event) =>{
+            console.log(this.peerConnection.connectionState);
+        }
+
+        this.peerConnection.ontrack = (event)=>{
+            console.log("on tranck");
+            this.onTrack(event);
+        }
+
+        this.peerConnection.onicecandidate = this.onicecandidate;
+
+        this.listeningAnswer();
+        this.listeningICECandidates();
+
         const offer = await this.peerConnection.createOffer(OFFER_OPTIONS);
         await this.peerConnection.setLocalDescription(offer);
-        await this.peerConnection.loadCandidates();
 
         this.socket.emit(EVENT_SOCKET.SEND_OFFER_OF_CONNECTION,{ 
             desc : this.peerConnection.localDescription, 
             streamingId : this.streamingId 
         });
+
+        console.log("Send offer of co0nnection....");
     }
 
     listeningAnswer = async()=>{
-        this.socket.on(EVENT_SOCKET.RESPONDING_TO_CLIENT,(params) => this.receiveAnswer(params))
+        this.socket.on(EVENT_SOCKET.ANSWER_OF_CONNECTION,(params) =>{
+            this.receiveAnswer(params)
+            console.log("receive Answer....")
+        })
+    }
+
+    listeningICECandidates = () =>{
+        this.socket.on(EVENT_SOCKET.CANDIDATES_OF_CONNECTION,(params)=>{
+            this.ICECandidates.push(params.candidate);
+            console.log("receive candidates")
+        });
     }
 
     receiveAnswer = async(params) =>{
+
         await this.peerConnection.setRemoteDescription(params.desc); 
+        await this.loadCandidates();
+        // await this.peerConnection.setLocalDescription();
+
+        console.log(this.peerConnection.connectionState);
     }
-  
+
+    loadCandidates = async()=>{
+        console.log("cargando candidtes",this.ICECandidates.length)
+        for(let i = 0; i< this.ICECandidates.length;i++){
+          await this.peerConnection.addIceCandidate(this.ICECandidates[i]);
+        }
+    }
+    
+    onicecandidate = (event) => {
+        if(event.candidate){
+           this.socket.emit(EVENT_SOCKET.SEND_CANDIDATES_OF_CONNECTION,{ candidate:event.candidate,socketId:this.streamingId });
+           console.log("send candidates....",this.streamingId)
+        }
+    }
+
+    onTrack = (event) => event
 }
 
-export class emisor extends client{
+export class Emisor extends Client{
   
-    constructor(){
-      super();
-      this.clients = [];
-      this.mediaStream = null;
-        
-    //   this.listeningCreateStreaming();
-      this.listeningOffersOfConnections();
-  
-    }
-  
-    createStreaming = async() =>{
+    clients = [];
+    mediaStream = null;
+
+    createStreaming(params){
   
       this.state = STATE.CREATING_THE_STREAMING;
     
-      const params = {
-        title:"title of streming",
-        description:"the description the of streming...."
-      }
+      this.listeningOffersOfConnections();
       this.socket.emit(EVENT_SOCKET.CREATE_STREAMING,params);
 
     }
-
-    // listeningCreateStreaming = ()=>{
-    //     this.socket.on(EVENT_SOCKET.CREATE_STREAMING,params =>{
-    //         console.log(params.roomId)
-    //     });
-    // }
   
     listeningOffersOfConnections = ()=>{
-      this.socket.on(EVENT_SOCKET.OFFERS_OF_CONNECTION,(params)=> this.aceptOffer(params));
+        
+        this.socket.on(EVENT_SOCKET.OFFERS_OF_CONNECTION,(params)=> {
+            this.aceptOffer(params)
+            console.log("an offer of connetion");
+        });
     }
 
     aceptOffer = async(params) =>{
   
-        const newClient = new RTCConnectionClient(CONFIG_CONNECTION_DEFAULT);
-      
+        const newClient = new RTCConnectionClient(CONFIG_CONNECTION_DEFAULT,()=>{
+
+            this.socket.on(EVENT_SOCKET.CANDIDATES_OF_CONNECTION,(params)=>{
+                newClient.ICECandidates.push(params.candidate);
+                console.log("received candidates...")
+            });
+        });
+
+        newClient.onicecandidate = (event)=>{
+            if(event.candidate){
+                this.socket.emit(EVENT_SOCKET.SEND_CANDIDATES_OF_CONNECTION,{ candidate : event.candidate, socketId : params.socketId });
+                console.log("send candidates...")
+             }
+        }
+
         await newClient.setRemoteDescription(params.desc);
         const answer = await newClient.createAnswer();
         await newClient.setLocalDescription(answer);
@@ -167,9 +263,15 @@ export class emisor extends client{
             console.log(newClient.connectionState);
         }
 
-        await newClient.loadCandidates();
+        this.mediaStream.getTracks().forEach(track => {
+            console.log("add track",track,this.mediaStream)
+            newClient.addTrack(track, this.mediaStream);
+        });
 
-        this.socket.emit(EVENT_SOCKET.ANSWER_OF_CONNECTION,{ 
+        await newClient.loadCandidates();
+        
+        console.log("send answer of connection....")
+        this.socket.emit(EVENT_SOCKET.SEND_ANSWER_OF_CONNECTION,{ 
             desc : newClient.localDescription, 
             socketId : params.socketId 
         });
@@ -177,12 +279,23 @@ export class emisor extends client{
         this.clients.push(newClient);
     }
   
-    connectWithMediaStream = async () => {
-        this.mediaStream = await navigator.mediaDevices.getDisplayMedia(MEDIA_STREAM_CONFIG);
+    connectWithMediaStream = async (videoRef) => {
+        // this.mediaStream = mediaStream;
         this.startStream = "mediaStreamingConnected ";
+
+        this.mediaStream = await navigator.mediaDevices.getDisplayMedia({
+            video: {
+              width:{  ideal: 1280, max:1920, },
+              height:{ ideal:600, max:1080, },
+              frameRate:{ ideal:60,max:70, },
+            },
+            audio: false,
+        });
+
+        videoRef.srcObject = this.mediaStream;
     }
   
-    startStream = async()=> {
+    startStreaming = async()=> {
         this.clients.forEach(client => {
             this.mediaStream.getTracks().forEach(track => {
                 client.addTrack(track, this.mediaStream);
@@ -192,7 +305,7 @@ export class emisor extends client{
         this.state = STATE.ON_STREAMING;
     }
   
-    closeStream = async()=> {
+    closeStreaming = async()=> {
         this.client.forEach(client => client.close());
         this.state = STATE.END_STREAMING;
     }

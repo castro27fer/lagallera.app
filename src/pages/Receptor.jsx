@@ -1,34 +1,23 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect } from 'react'
 import { Col, Row } from 'react-bootstrap';
-import { io } from 'socket.io-client'
-import RTCConnectionClient from '../modules/RTCConnection.js';
+import { Receptor as Streaming } from '../modules/streming';
+import { useParams } from 'react-router-dom';
 
 function Receptor() {
 
-  const API_SERVER =  process.env.REACT_APP_URL_API;
-
   const videoRef = React.createRef();
+  const { streamingId } = useParams();
 
-  let peerConnection = null;
-
-  let socket = null;
-
-  const connectStrem = async() =>{
-    peerConnection.establishConnection();
-  }
-
-  const onTrack = (e) => videoRef.current.srcObject = e.streams[0];
-
-  const onState = (state) => console.log(`state ${state}`);
+  let receptor = null;
 
   useEffect(()=>{
 
-    if(socket === null){
-      socket = io(API_SERVER);
-      this.peerConnection = new RTCConnectionClient(socket,"ROOM_CLIENT_001");
-      this.peerConnection.onState = onState;
-      this.peerConnection.onTrack = onTrack;
+    if(receptor === null){
 
+      receptor = new Streaming(streamingId);
+      receptor.onTrack = (event) =>{
+        videoRef.current.srcObject = event.streams[0];
+      };
     }
     
   },[])
@@ -41,7 +30,7 @@ function Receptor() {
         <video ref={videoRef} controls autoPlay></video>
         </Col>
 
-        <button onClick={connectStrem}>Conectar a la transmisión</button>
+        {/* <button>Conectar a la transmisión</button> */}
     </Row>
 
     </>)

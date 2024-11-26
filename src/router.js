@@ -21,7 +21,7 @@ const router = createBrowserRouter([
           element : <Streaming />
         },
         {
-          path    : "receptor",
+          path    : "receptor/:streamingId",
           element : <Receptor/>
         },
       ]

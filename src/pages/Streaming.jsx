@@ -1,18 +1,13 @@
 import React, { useEffect, useState } from 'react'
-import { Row, Col, Container, Form, Button } from 'react-bootstrap'
-import emisor from '../modules/emisor';
+import { Row, Col, Form, Button } from 'react-bootstrap'
+import { Emisor }  from '../modules/streming';
 
 function Streaming() {
 
   const videoRef = React.createRef(null);
   const status = React.createRef(null);
-  const countClient = React.createRef(null)
-
-  let stream = null;
 
   // let preferredVideoCodecMimeType = 'video/VP8';
-
-
 
 // const supportsSetCodecPreferences = window.RTCRtpTransceiver &&
 //   'setCodecPreferences' in window.RTCRtpTransceiver.prototype;
@@ -39,41 +34,85 @@ function Streaming() {
   // }
 
   const [state,setState] = useState("New");
-  const [clients,setClients] = useState([]);
-  const [chats,setChats] = useState([]);
+  const [id,setId] = useState(null);
+  const [stream,setStream] = useState(null);
+
+  // const [streaming,setStreaming] = useState(null);
+  // const [clients,setClients] = useState([]);
+  // const [chats,setChats] = useState([]);
 
   const onState = (state) => setState(()=>state);
 
   const onCreateStreaming = () =>{
-    stream = new emisor();
-    stream.onState = onState;
-    stream.clientsConnected = clientsConnected
+
+    const params = {
+      title:"title of streming",
+      description:"the description the of streming...."
+    }
+
+
+    stream.createStreaming(params);
+    console.log("created room streaming")
+    // console.log(stream);
+    // stream.onConnect = ()=>{
+    //   setId(()=> stream.id);
+    //   console.log("streaming created..")
+    // }
   }
 
-  const clientsConnected = (client) =>{
-    setClients((prev_clients)=>{
+  const connectWithMediaStream = async()=> {
 
-      prev_clients.push(client);
-      return prev_clients;
-      
-    })
+    // const mediaStream = await navigator.mediaDevices.getDisplayMedia({
+    //   video: {
+    //     width:{  ideal: 1280, max:1920, },
+    //     height:{ ideal:600, max:1080, },
+    //     frameRate:{ ideal:60,max:70, },
+    //   },
+    //   audio: false,
+    // });
+
+    stream.connectWithMediaStream(videoRef.current);
+    // videoRef.current.srcObject = mediaStream;
+
+    console.log("connect a media stream....")
+
   }
 
-  const connectWithMediaStream = ()=> stream.connectWithMediaStream();
+  const startStream = () => {
 
-  const startStream = () => stream.startStream();
+    console.log("Iniciar Streaming......");
+    stream.startStreaming();
+  };
 
-  const closeStream = () => stream.closeStream();
+  const closeStream = () => stream.closeStreaming();
 
 
   useEffect(()=>{
+
+    if(stream === null){
+      setStream(new Emisor());
+    }
     
   },[])
 
   useEffect(()=>{
+
+    if(stream !== null){
+
+      stream.onConnect = ()=>{
+        setId(()=> stream.id);
+        console.log("streaming created..")
+      }
+
+    }
+  },[stream])
+
+  useEffect(()=>{
     console.log(status);
     status.current.innerHTML = state;
-  },[state]);
+  },
+
+  [state]);
 
   return (<>
      
@@ -91,11 +130,12 @@ function Streaming() {
 
         </Col>
 
+
         <Col md='4' lg='4' xl='4'>
 
           <Row>
             <Col>
-              <p>Connecteds (<span>{clients.length}</span>)</p>
+              {/* <p>Connecteds (<span>{clients.length}</span>)</p>
               <div hidden={clients.length === 0}>
                 {
                   clients.map(client =>{
@@ -104,18 +144,18 @@ function Streaming() {
 
                   })
                 }
-              </div>
+              </div> */}
             </Col>
           </Row>
 
           <Row>
             <p>Room of Chat</p>
             <div>
-                {
+                {/* {
                   chats.map(chat =>{
                     return(<p><strong>{chat.name}:</strong> {chat.message}</p>);
                   })
-                }
+                } */}
             </div>
             <Form.Control type='text' placeholder='Entro a message' />
             <Button variant='secondary' className='mt-2'>Send message</Button>
@@ -124,6 +164,8 @@ function Streaming() {
         </Col>
 
       </Row>
+
+      <a href={`http://localhost:3003/receptor/${id}`} target='_blank'>{`http://localhost:3003/receptor/${id}`}</a>
   </>)
 }
 
