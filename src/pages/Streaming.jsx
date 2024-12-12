@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Row, Col, Form, Button } from 'react-bootstrap'
 import { Emisor }  from '../modules/streming';
+import Chat from '../componets/chat/Chat';
 
 function Streaming() {
 
@@ -36,10 +37,10 @@ function Streaming() {
   const [state,setState] = useState("New");
   const [id,setId] = useState(null);
   const [stream,setStream] = useState(null);
+  const [totalConnecteds,setTotalConnecteds] = useState(0);
+  const [maxNumberClient,setmaxNumberClient] = useState(0);
 
-  // const [streaming,setStreaming] = useState(null);
-  // const [clients,setClients] = useState([]);
-  // const [chats,setChats] = useState([]);
+  const [clients,setClients] = useState([]);
 
   const onState = (state) => setState(()=>state);
 
@@ -53,27 +54,11 @@ function Streaming() {
 
     stream.createStreaming(params);
     console.log("created room streaming")
-    // console.log(stream);
-    // stream.onConnect = ()=>{
-    //   setId(()=> stream.id);
-    //   console.log("streaming created..")
-    // }
   }
 
   const connectWithMediaStream = async()=> {
 
-    // const mediaStream = await navigator.mediaDevices.getDisplayMedia({
-    //   video: {
-    //     width:{  ideal: 1280, max:1920, },
-    //     height:{ ideal:600, max:1080, },
-    //     frameRate:{ ideal:60,max:70, },
-    //   },
-    //   audio: false,
-    // });
-
     stream.connectWithMediaStream(videoRef.current);
-    // videoRef.current.srcObject = mediaStream;
-
     console.log("connect a media stream....")
 
   }
@@ -87,6 +72,26 @@ function Streaming() {
   const closeStream = () => stream.closeStreaming();
 
 
+  const synchronizeClient = ()=>{
+    
+    const mapClient = (stream)=>{
+      return stream.clients.map(client =>{
+        return {
+          socketId: client.socketId,
+          state: client.connectionState
+        }
+      })
+    }
+
+    const connectedClients = stream.clients.filter(x => x.connectionState === "connected").length;
+    const maxNumberClients = stream.clients.length;
+
+    setTotalConnecteds(() =>  connectedClients);
+    setmaxNumberClient(() =>  maxNumberClients);
+    setClients(() =>  mapClient(stream));
+
+  }
+
   useEffect(()=>{
 
     if(stream === null){
@@ -99,9 +104,28 @@ function Streaming() {
 
     if(stream !== null){
 
-      stream.onConnect = ()=>{
+      stream.onConnect = (client)=>{
         setId(()=> stream.id);
         console.log("streaming created..")
+      }
+
+      stream.onConnectClient = ()=>{
+        console.log("connected client")
+        synchronizeClient();
+
+        
+      }
+
+      stream.onDisconnectClient = ()=>{
+        console.log("disconnect client");
+        synchronizeClient();
+
+      }
+
+      stream.onFailed = ()=>{
+        console.log("fialed client");
+        synchronizeClient();
+
       }
 
     }
@@ -135,30 +159,28 @@ function Streaming() {
 
           <Row>
             <Col>
-              {/* <p>Connecteds (<span>{clients.length}</span>)</p>
-              <div hidden={clients.length === 0}>
+              <p>Connecteds (<span>{totalConnecteds}</span>)</p>
+              <p>Max Connecteds (<span>{maxNumberClient}</span>)</p>
+              <div>
                 {
                   clients.map(client =>{
 
-                    return(<p key={client.id}>{client.name}</p>)
+                    return(<p key={client.socketId}>{client.socketId} STATE: {client.state}</p>)
 
                   })
                 }
-              </div> */}
+              </div>
             </Col>
           </Row>
 
           <Row>
             <p>Room of Chat</p>
             <div>
-                {/* {
-                  chats.map(chat =>{
-                    return(<p><strong>{chat.name}:</strong> {chat.message}</p>);
-                  })
-                } */}
+
+              <Chat socket = { stream ? stream.socket : undefined } />
+
             </div>
-            <Form.Control type='text' placeholder='Entro a message' />
-            <Button variant='secondary' className='mt-2'>Send message</Button>
+              
           </Row>
           
         </Col>

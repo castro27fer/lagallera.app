@@ -1,0 +1,47 @@
+
+.chat-container {
+    list-style: none;
+    width: 100%;
+    position: relative;
+    height: 250px;
+}
+
+.chat-item-me{
+    float: right;
+    text-align: right;
+}
+
+.chat-item-other{
+    float: left;
+}
+
+.chat-item-me,.chat-item-other{
+    width: 100%;
+}
+
+.chat-message-me{
+    float: right;
+}
+
+.chat-message-other{
+    float: left;
+}
+.chat-message-me, .chat-message-other{
+    display: table;
+}
+
+.chat-control{
+    position: relative;
+}
+
+.chat-control-input{
+    padding-right: 70px;
+}
+
+.chat-control-button{
+    
+    position: absolute;
+    right: 0px;
+    top: 0px;
+
+}

@@ -66,8 +66,10 @@ export class RTCConnectionClient extends RTCPeerConnection{
 
     ICECandidates = [];
 
-    constructor(props,callback){
+    constructor(props,socketId,callback){
         super(props);
+
+        this.socketId = socketId;
 
         callback();
     }
@@ -194,9 +196,7 @@ export class Receptor extends Client{
 
         await this.peerConnection.setRemoteDescription(params.desc); 
         await this.loadCandidates();
-        // await this.peerConnection.setLocalDescription();
 
-        console.log(this.peerConnection.connectionState);
     }
 
     loadCandidates = async()=>{
@@ -240,8 +240,8 @@ export class Emisor extends Client{
 
     aceptOffer = async(params) =>{
   
-        const newClient = new RTCConnectionClient(CONFIG_CONNECTION_DEFAULT,()=>{
-
+        const newClient = new RTCConnectionClient(CONFIG_CONNECTION_DEFAULT,params.socketId,()=>{
+           
             this.socket.on(EVENT_SOCKET.CANDIDATES_OF_CONNECTION,(params)=>{
                 newClient.ICECandidates.push(params.candidate);
                 console.log("received candidates...")
@@ -255,11 +255,18 @@ export class Emisor extends Client{
              }
         }
 
-        await newClient.setRemoteDescription(params.desc);
-        const answer = await newClient.createAnswer();
-        await newClient.setLocalDescription(answer);
-
         newClient.onconnectionstatechange =(event) =>{
+
+            if(newClient.connectionState === "connected"){
+                this.onConnectClient();
+            }
+            else if(newClient.connectionState === "disconnected"){
+                this.onDisconnectClient();
+            }
+            else if(newClient.connectionState === "failed"){
+                this.onFailed();
+            }
+            
             console.log(newClient.connectionState);
         }
 
@@ -267,6 +274,20 @@ export class Emisor extends Client{
             console.log("add track",track,this.mediaStream)
             newClient.addTrack(track, this.mediaStream);
         });
+
+        const videoTracks = this.mediaStream.getVideoTracks();
+        const audioTracks = this.mediaStream.getAudioTracks();
+
+        if (videoTracks.length > 0) {
+            console.log(`Using video device: ${videoTracks[0].label}`);
+        }
+        if (audioTracks.length > 0) {
+            console.log(`Using audio device: ${audioTracks[0].label}`);
+        }
+
+        await newClient.setRemoteDescription(params.desc);
+        const answer = await newClient.createAnswer();
+        await newClient.setLocalDescription(answer);
 
         await newClient.loadCandidates();
         
@@ -313,5 +334,11 @@ export class Emisor extends Client{
     onState = (callback) =>{
         callback(this.state);
     }
+
+    onConnectClient = (client) =>{}
+
+    onDisconnectClient = (client) =>{}
+
+    onFailed = ()=>{}
   
 }
