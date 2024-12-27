@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Form } from 'react-bootstrap';
 
 
-function Chat({ socket }){
+function Chat({ socket,name }){
 
     const [items,setItems] = useState([]);
     const inputRef = React.createRef("");
@@ -15,19 +15,18 @@ function Chat({ socket }){
 
         if(inputRef.current.value){
 
+            console.log(socket);
+
             const item = {
-                name:"Yo",
+                id:socket.id,
+                name:name,
                 message : inputRef.current.value,
-                type : "me"
             };
 
-            addItem(item);
+            // addItem(item);
             inputRef.current.value = "";
 
-            socket.emit("sendMessage",{ 
-                name: "Fernando Castro Martinez", 
-                message: item.message
-            });
+            socket.emit("sendMessage",item);
 
         }
 
@@ -61,14 +60,14 @@ function Chat({ socket }){
     useEffect(()=>{
 
         if(socket){
+            console.log("chat connect...")
             socket.on("message",(params) => {
                 console.log("listing chat room....",params)
-
 
                 addItem({
                     name: params.name,
                     message:params.message,
-                    type: "other"
+                    type: socket.id === params.id ? "me" : "other"
                 })
             });
         }

@@ -34,6 +34,7 @@ function Receptor() {
     
 
   },[receptor])
+  
   return (<>
     <div>Receptor</div>
     <Row className='ju'>
@@ -43,7 +44,7 @@ function Receptor() {
         </Col>
 
         <Col>
-        <Chat socket = { receptor ? receptor.socket : undefined } />
+        <Chat socket = { receptor ? receptor.socket : undefined } name = {`Client ${receptor ? receptor.socket.id : ""}`} />
         </Col>
 
         {/* <button>Conectar a la transmisión</button> */}

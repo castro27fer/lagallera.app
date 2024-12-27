@@ -234,7 +234,7 @@ export class Emisor extends Client{
         
         this.socket.on(EVENT_SOCKET.OFFERS_OF_CONNECTION,(params)=> {
             this.aceptOffer(params)
-            console.log("an offer of connetion");
+            // console.log("an offer of connetion");
         });
     }
 
@@ -244,14 +244,14 @@ export class Emisor extends Client{
            
             this.socket.on(EVENT_SOCKET.CANDIDATES_OF_CONNECTION,(params)=>{
                 newClient.ICECandidates.push(params.candidate);
-                console.log("received candidates...")
+                // console.log("received candidates...")
             });
         });
 
         newClient.onicecandidate = (event)=>{
             if(event.candidate){
                 this.socket.emit(EVENT_SOCKET.SEND_CANDIDATES_OF_CONNECTION,{ candidate : event.candidate, socketId : params.socketId });
-                console.log("send candidates...")
+                // console.log("send candidates...")
              }
         }
 
@@ -267,11 +267,11 @@ export class Emisor extends Client{
                 this.onFailed();
             }
             
-            console.log(newClient.connectionState);
+            // console.log(newClient.connectionState);
         }
 
         this.mediaStream.getTracks().forEach(track => {
-            console.log("add track",track,this.mediaStream)
+            // console.log("add track",track,this.mediaStream)
             newClient.addTrack(track, this.mediaStream);
         });
 
@@ -291,7 +291,7 @@ export class Emisor extends Client{
 
         await newClient.loadCandidates();
         
-        console.log("send answer of connection....")
+        // console.log("send answer of connection....")
         this.socket.emit(EVENT_SOCKET.SEND_ANSWER_OF_CONNECTION,{ 
             desc : newClient.localDescription, 
             socketId : params.socketId 

@@ -177,7 +177,7 @@ function Streaming() {
             <p>Room of Chat</p>
             <div>
 
-              <Chat socket = { stream ? stream.socket : undefined } />
+              <Chat socket = { stream ? stream.socket : undefined } name = "Stream"/>
 
             </div>
               
