@@ -5,7 +5,7 @@ import { Outlet } from 'react-router-dom';
 
 function App() {
   return (
-   <Container fluid>
+   <Container fluid className='bg-light'>
       <Outlet />
    </Container>
   );
