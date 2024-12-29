@@ -1,9 +1,13 @@
 import Form from './Form';
+import { create } from '../../modules/auth'
+import { Link, useLocation, redirect  } from "react-router-dom";
 
 function Login(){
     
-    const onSuccess = ()=>{
+    const onSuccess = (result)=>{
 
+        create(result);
+        redirect("/");
     }
 
 
@@ -17,20 +21,22 @@ function Login(){
 
             <Form.Input
                 name        =   { 'email' }
-                label       =   { 'Correo Electronico' }
-                placeholder =   { 'Escribe tu correo electronico' }
+                type        =   { 'email' }
+                label       =   { 'Correo Electrónico' }
+                placeholder =   { 'Escribe tu correo electrónico' }
                 required    =   { true }
                 cols        =   { 1 }
-                value = {""}
+                value       =   { "" }
             />
 
             <Form.InputPassword 
                 name        =   { 'password' }
+                type        =   { 'password' }
                 label       =   { 'Contraseña' }
                 placeholder =   { 'Escribe tu contraseña' }
-                required    =   { true }
+                required    =   { false }
                 cols        =   { 1 }
-                value = {""}
+                value       =   { "" }
             />
 
             <Form.Button type='submit' name='save' title='Iniciar Sessión' variant='secondary' cols={1} />

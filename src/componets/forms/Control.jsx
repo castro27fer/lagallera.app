@@ -64,6 +64,9 @@ export class Control extends React.Component{
                 this.state.onValid({ name : this.state.name,valid : valid});
             });
         }
+        else{
+            this.state.onValid({ name : this.state.name,valid : true});
+        }
     }
 
     componentDidUpdate(prevProps, prevState) {

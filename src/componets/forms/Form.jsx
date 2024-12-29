@@ -28,29 +28,31 @@ function Form({
     const handleSubmit = (event) => {
 
         const form2 = event.currentTarget;
-        // setValidated(true);
+        
         event.preventDefault();
         event.stopPropagation();
     
         if (form2.checkValidity() && valid){
-          // if (true){
+          
+          let data = {};
+          
+          form.forEach(field =>{ data[field.name] = field.value });
 
-            let data = {};
+          axios({ method: method, url : url, data: data }).then((result) => {
             
-            form.forEach(field =>{ data[field.name] = field.value });
+            set_form((prev_form)=>{
+              return prev_form.map(input =>{
+                input.isInvalid = false;
+                input.isValid = true;
+                return input;
+              });
+            });
 
-            axios({ method: method, url : url, data: data }).then(() => {
-              
-              set_form((prev_form)=>{
-                return prev_form.map(input =>{
-                  input.isInvalid = false;
-                  input.isValid = false;
-                  return input;
-                });
-              })
-              onSuccess(data);
-            })
-            .catch(err =>{
+            set_message_invalid({show:false,message:""})
+
+            onSuccess(result);
+          })
+          .catch(err =>{
 
               set_message_invalid({show:true,message:err.message})
 
@@ -65,9 +67,9 @@ function Form({
 
                   input.isInvalid = true;
                   input.isValid = false;
-                  // input.valid = false;
+                  input.valid = false;
                   input.errorMessage = validation.message;
-                  // console.log(validation.message);
+                  console.log(validation.message);
 
                   form_aux[index] = input;
 
@@ -77,7 +79,7 @@ function Form({
               });
 
               onError(err)
-            })
+          })
          
         }
     };
@@ -88,7 +90,11 @@ function Form({
         const index = prev_form.findIndex(x => x.name === name);
         const update_form = [...prev_form];
         const field = {...update_form[index]};
+
         field.valid = valid;
+        field.isInvalid = !valid;
+        field.isValid = valid;
+
         update_form[index] = field;
         return update_form;
       });
@@ -103,33 +109,6 @@ function Form({
         update_form[index] = filed;
         return update_form;
       });
-    }
-
-    const isInvalid = (name,invalid)=>{
-
-      if(invalid !== undefined) return invalid;
-
-      if(form.length > 0){
-        const inputs = form.filter(x=> x.name === name);
-
-        if(inputs.length === 0) return undefined;
-        return inputs[0].isInvalid;
-      }
-
-    }
-
-    const isValid = (name,valid) =>{
-
-      if(valid !== undefined) return valid;
-
-      if(form.length > 0){
-
-        const inputs = form.filter(x=> x.name === name);
-
-        if(inputs.length === 0) return undefined;
-      
-        return inputs[0].isValid;
-      }
     }
 
     useEffect(()=>{
@@ -149,13 +128,14 @@ function Form({
               minLength   : field.min,
               maxLength   : field.max,
               errorMessage: "Campo requerido",
-              isInvalid   : false,
-              isValid     : false,
+              isInvalid   : field.isInvalid,
+              isValid     : field.isValid,
               type        : input.type,
               cols        : field.cols,
               placeholder : field.placeholder,
               label       : field.label,
-              options     : field.options
+              options     : field.options,
+              type        : field.type
             }
           }));
 
@@ -205,9 +185,9 @@ function Form({
       <form id={name} method={method} className={className} onSubmit={handleSubmit}>
         <Row>
         {
-          Children.map(children.filter(x=>x.type !== Form.Button),(child) =>{
+          form.map(child =>{
             
-            const input = child.props;
+            const input = child;
             if(child.type === Form.Input){
               return (
                 <Col 
@@ -231,8 +211,8 @@ function Form({
                       maxLength       = { input.max }
                       disabled        = { input.disabled }
                       errorMessage    = { input.errorMessage }
-                      isInvalid       = { isInvalid(input.name,input.isInvalid) }
-                      isValid         = { isValid(input.name,input.isValid) }
+                      isInvalid       = { input.isInvalid }
+                      isValid         = { input.isValid }
                       onChange        = { (data) => onchange(data) }
                       onValid         = { onValid }
                       value           = { input.value }
@@ -264,8 +244,8 @@ function Form({
                     maxLength       = { input.max }
                     disabled        = { input.disabled }
                     errorMessage         = { input.message }
-                    isInvalid       = { isInvalid(input.name,input.isInvalid) }
-                    isValid         = { isValid(input.name,input.isValid) }
+                    isInvalid       = { input.isInvalid }
+                    isValid         = { input.isValid }
                     onChange        = { (data) => onchange(data) }
                     onValid         = { onValid }
                     value           = { input.value }
@@ -295,15 +275,15 @@ function Form({
                         maxLength       = { input.max }
                         disabled        = { input.disabled }
                         errorMessage    = { input.message }
-                        isInvalid       = { isInvalid(input.name,input.isInvalid) }
-                        isValid         = { isValid(input.name,input.isValid) }
+                        isInvalid       = { input.isInvalid }
+                        isValid         = { input.isValid }
                         onChange        = { (data) => onchange(data) }
                         onValid         = { onValid }
                         value           = { input.value }
                     />
                   </Col>)
             }
-            else if(child.type === Form.InputPassword){
+            else if(child.type === "password"){
               return (<Col key={input.name} 
                       // xs={`${sizeColumn}`} 
                       sm={`${sizeColumn * input.cols}`} 
@@ -324,9 +304,9 @@ function Form({
                         minLength       = { input.min }
                         maxLength       = { input.max }
                         disabled        = { input.disabled }
-                        errorMessage    = { input.message }
-                        isInvalid       = { isInvalid(input.name,input.isInvalid) }
-                        isValid         = { isValid(input.name,input.isValid) }
+                        errorMessage    = { input.errorMessage }
+                        isInvalid       = { input.isInvalid }
+                        isValid         = { input.isValid }
                         onChange        = { (data) => onchange(data) }
                         onValid         = { onValid }
                         value           = { input.value }
@@ -335,7 +315,7 @@ function Form({
             
               </Col>)
             }
-            else if(child.type === Form.InputEmail){
+            else if(child.type === "email"){
               return (<Col key={input.name} 
                       // xs={`${sizeColumn}`} 
                       sm={`${sizeColumn * input.cols}`} 
@@ -356,9 +336,9 @@ function Form({
                         minLength       = { input.min }
                         maxLength       = { input.max }
                         disabled        = { input.disabled }
-                        errorMessage    = { input.message }
-                        isInvalid       = { isInvalid(input.name,input.isInvalid) }
-                        isValid         = { isValid(input.name,input.isValid) }
+                        errorMessage    = { input.errorMessage }
+                        isInvalid       = { input.isInvalid }
+                        isValid         = { input.isValid }
                         onChange        = { (data) => onchange(data) }
                         onValid         = { onValid }
                         value           = { input.value }
@@ -390,8 +370,8 @@ function Form({
                     maxLength       = { input.max }
                     disabled        = { input.disabled }
                     errorMessage         = { input.message }
-                    isInvalid       = { isInvalid(input.name,input.isInvalid) }
-                    isValid         = { isValid(input.name,input.isValid) }
+                    isInvalid       = { input.isInvalid }
+                    isValid         = { input.isValid }
                     onChange        = { (data) => onchange(data) }
                     onValid         = { onValid }
                     value           = { input.value }
@@ -417,8 +397,8 @@ function Form({
                     defaultValue    = { input.defaultValue }
                     required        = { input.required } 
                     disabled        = { input.disabled }
-                    isInvalid       = { isInvalid(input.name,input.isInvalid) }
-                    isValid         = { isValid(input.name,input.isValid) }
+                    isInvalid       = { input.isInvalid }
+                    isValid         = { input.isValid }
                     options         = { input.options }
                     onChange        = { (data) => { 
                       onchange(data); 
