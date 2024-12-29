@@ -188,7 +188,7 @@ function Form({
           form.map(child =>{
             
             const input = child;
-            if(child.type === Form.Input){
+            if(child.type === "text"){
               return (
                 <Col 
                   key={input.name} 

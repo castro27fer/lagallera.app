@@ -1,13 +1,17 @@
 import Form from './Form';
 import { create } from '../../modules/auth'
-import { Link, useLocation, redirect  } from "react-router-dom";
+import { Link, useLocation, redirect, useNavigate   } from "react-router-dom";
 
 function Login(){
     
+    let navigate = useNavigate();
+
     const onSuccess = (result)=>{
 
         create(result);
-        redirect("/");
+        console.log("redirect to home")
+        navigate("/");
+        
     }
 
 

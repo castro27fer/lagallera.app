@@ -14,6 +14,7 @@ const AUTH = {
 
 export const create = (data) =>{
    
+    localStorage.clear();
     localStorage.setItem(AUTH.TOKEN,data.token);
     localStorage.setItem(AUTH.USER,JSON.stringify(data.user));
     // localStorage.setItem(AUTH.PHOTO,data.photo)
