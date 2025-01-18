@@ -1,6 +1,6 @@
 import React, { useEffect, useState, Children } from 'react'
 import { InputDate, InputText, InputPhone, InputPassword,TextArea, Select, InputEmail } from './Control';
-import axios from '../../axiosInterceptor';
+import axios from '../../modules/axiosInterceptor';
 import { Alert, Button } from "react-bootstrap";
 import { Row, Col } from 'react-bootstrap'
 
@@ -60,20 +60,23 @@ function Form({
                 
                 let form_aux = [...prev_form];
 
-                err.validations.forEach((validation) =>{
+                if(err.validations){
+                  err.validations.forEach((validation) =>{
 
-                  const index = form_aux.findIndex(x=> x.name === validation.name);
-                  let input = {...form_aux[index]};
-
-                  input.isInvalid = true;
-                  input.isValid = false;
-                  input.valid = false;
-                  input.errorMessage = validation.message;
-                  console.log(validation.message);
-
-                  form_aux[index] = input;
-
-                })
+                    const index = form_aux.findIndex(x=> x.name === validation.name);
+                    let input = {...form_aux[index]};
+  
+                    input.isInvalid = true;
+                    input.isValid = false;
+                    input.valid = false;
+                    input.errorMessage = validation.message;
+                    console.log(validation.message);
+  
+                    form_aux[index] = input;
+  
+                  })
+                }
+                
 
                 return form_aux;
               });

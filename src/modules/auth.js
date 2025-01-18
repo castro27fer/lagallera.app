@@ -4,12 +4,7 @@ const AUTH = {
     USER                        : "USER",
     TOKEN                       : "TOKEN",
     PHOTO                       : "PHOTO",
-    CRIMES_CACHE                : "CRIMES_CACHE",
-    MATTERS_CACHE               : "MATTERS_CACHE",
-    DISTRICT_CACHE              : "DISTRICT_CACHE",
-    SEARCH_JUDGMENTS_CACHE      : "SEARCH_JUDGMENTS_CACHE",
-    PUBLICATIONS_CACHE          : "PUBLICATIONS_CACHE",
-    REDIRECT_AFTER_AUTHENTICATE :"REDIRECT_AFTER_AUTHENTICATE"
+    REDIRECT_AFTER_AUTHENTICATE : "REDIRECT_AFTER_AUTHENTICATE"
 };
 
 export const create = (data) =>{

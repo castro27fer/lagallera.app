@@ -9,7 +9,7 @@ function Login(){
     const onSuccess = (result)=>{
 
         create(result);
-        console.log("redirect to home")
+        // console.log("redirect to home")
         navigate("/");
         
     }
@@ -30,7 +30,7 @@ function Login(){
                 placeholder =   { 'Escribe tu correo electrónico' }
                 required    =   { true }
                 cols        =   { 1 }
-                value       =   { "" }
+                value       =   { "jf3r123@gmail.com" }
             />
 
             <Form.InputPassword 
@@ -40,7 +40,7 @@ function Login(){
                 placeholder =   { 'Escribe tu contraseña' }
                 required    =   { false }
                 cols        =   { 1 }
-                value       =   { "" }
+                value       =   { "Castrofer27*" }
             />
 
             <Form.Button type='submit' name='save' title='Iniciar Sessión' variant='secondary' cols={1} />

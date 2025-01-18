@@ -1,6 +1,6 @@
 
 import axios from "axios";
-import { get_token } from './modules/auth.js';
+import { get_token } from './auth.js';
 
 export const host = process.env.REACT_APP_URL_API;
 const state = process.env.REACT_APP_STATE;
@@ -51,9 +51,17 @@ axios.interceptors.response.use((response) => {
         });
     }
 
+    if(error.status === 401){
+      console.log(error)
+      localStorage.clear();
+      window.location.href = "/";
+    }
+
     if(error.code === STATUS.ERR_BAD_REQUEST || error.code === STATUS.ERR_BAD_RESPONSE){
       return Promise.reject(error.response.data);
     }
+
+   
 
     // Puedes lanzar una nueva promesa para personalizar el manejo del error
     return Promise.reject(error);

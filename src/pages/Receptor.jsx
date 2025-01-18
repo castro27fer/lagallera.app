@@ -1,13 +1,40 @@
 import React, { useEffect, useState } from 'react'
 import { Col, Row } from 'react-bootstrap';
 import { Receptor as Streaming } from '../modules/streming';
-import { useParams } from 'react-router-dom';
-import Chat from '../componets/chat/Chat'
+import Chat from '../componets/chat/Chat';
+import { useLoaderData } from "react-router";
+import { is_authenticated } from '../modules/auth';
+import api from '../modules/api';
+import { create } from '../modules/auth';
+
+
+export const loader = async(props)=>{
+
+  try{
+
+    const connectInf = await api.get_connect_streaming(props.params.streamingId);
+    
+    if(!is_authenticated()){
+      create({
+        token :connectInf.token,
+        user  :connectInf.streaming
+      });
+    }
+   
+    return connectInf;
+  }
+  catch(err){
+    console.log("error",err);
+    return {};
+  }
+  
+
+}
 
 function Receptor() {
 
+  const { streaming } = useLoaderData();
   const videoRef = React.createRef();
-  const { streamingId } = useParams();
 
   const [receptor,setReceptor] = useState(null);
 
@@ -15,15 +42,13 @@ function Receptor() {
     videoRef.current.srcObject = event.streams[0];
   }
 
-  useEffect(()=>{
-    
-    if(receptor === null){
 
-      setReceptor(() => new Streaming(streamingId));
-      
+  useEffect(()=>{
+
+    if(streaming){
+      setReceptor(() => new Streaming({ streamingId: streaming.id }));
     }
-    
-  },[])
+  },[streaming]);
 
   
   useEffect(()=>{

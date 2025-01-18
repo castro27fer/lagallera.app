@@ -1,11 +1,6 @@
 import Form  from './Form';
-import { Row, Col } from 'react-bootstrap';
 
-function Stream(){
-
-    const onSuccess = ()=>{}
-
-    const onError = ()=>{}
+function Stream({onSuccess,onError}){
 
     return (<>
         <Form
@@ -24,6 +19,7 @@ function Stream(){
                 required    =   {false}
                 max         =   {120}
                 min         =   {3}
+                value='Testing Streaming...'
 
             />
 
@@ -36,6 +32,7 @@ function Stream(){
                 required    =   {false}
                 max         =   {250}
                 min         =   {3}
+                value='testintg testing testing .....'
             />
 
             <Form.Button title='Crear Stream' name='btnCreateStream' type='submit' cols={1} />

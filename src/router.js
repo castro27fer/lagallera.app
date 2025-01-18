@@ -1,11 +1,11 @@
 import { createBrowserRouter} from "react-router-dom";
 import App from './App';
-import Streaming from "./pages/Streaming";
+import Streaming, { loader as streaming_loader } from "./pages/Streaming";
 import Login from "./pages/Login.jsx";
 import Home,{loader as homeLoader } from './pages/Home.jsx';
 
 import React from "react";
-import Receptor from "./pages/Receptor.jsx";
+import Receptor,{ loader as receptorLoader } from "./pages/Receptor.jsx";
 
 
 const router = createBrowserRouter([
@@ -23,10 +23,13 @@ const router = createBrowserRouter([
           element: <Login />
         },
         {
-          path  : "/streaming",
+          loader : streaming_loader,
+          path  : "/streaming/:streamingId",
           element : <Streaming />
         },
         {
+
+          loader: receptorLoader,
           path    : "receptor/:streamingId",
           element : <Receptor/>
         },

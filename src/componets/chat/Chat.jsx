@@ -49,7 +49,7 @@ function Chat({ socket,name }){
     }
 
     useEffect(()=>{
-        console.log(items);
+        // console.log(items);
         if(items.length > 0){
             scrollRef.current.href = `#${items[items.length - 1].name}_${items.length - 1}`;
             scrollRef.current.click();
@@ -60,7 +60,7 @@ function Chat({ socket,name }){
     useEffect(()=>{
 
         if(socket){
-            console.log("chat connect...")
+            // console.log("chat connect...")
             socket.on("message",(params) => {
                 console.log("listing chat room....",params)
 

@@ -2,8 +2,32 @@ import React, { useEffect, useState } from 'react'
 import { Row, Col, Form, Button } from 'react-bootstrap'
 import { Emisor }  from '../modules/streming';
 import Chat from '../componets/chat/Chat';
+import { redirect, useLoaderData } from "react-router";
+import { is_authenticated } from '../modules/auth'
+import api from '../modules/api';
+
+export const loader = async(props)=>{
+
+  try{
+
+    if(!is_authenticated){
+      return redirect("/");
+    }
+
+    const streaming = await api.get_streaming(props.params.streamingId);
+    
+    return streaming;
+  }
+  catch(err){
+    console.error(err);
+    return {};
+  }
+  
+}
 
 function Streaming() {
+
+  const { streaming } = useLoaderData();
 
   const videoRef = React.createRef(null);
   const status = React.createRef(null);
@@ -36,38 +60,22 @@ function Streaming() {
 
   const [state,setState] = useState("New");
   const [id,setId] = useState(null);
+  const [title,setTitle] = useState("");
+  const [description,setDescription] = useState("");
   const [stream,setStream] = useState(null);
   const [totalConnecteds,setTotalConnecteds] = useState(0);
   const [maxNumberClient,setmaxNumberClient] = useState(0);
 
   const [clients,setClients] = useState([]);
 
-  const onState = (state) => setState(()=>state);
+  // const onState = (state) => setState(()=>state);
 
-  const onCreateStreaming = () =>{
+  // const connectWithMediaStream = async()=> {
 
-    const params = {
-      title:"title of streming",
-      description:"the description the of streming...."
-    }
+  //   stream.connectWithMediaStream(videoRef.current);
+  //   console.log("connect a media stream....")
 
-
-    stream.createStreaming(params);
-    console.log("created room streaming")
-  }
-
-  const connectWithMediaStream = async()=> {
-
-    stream.connectWithMediaStream(videoRef.current);
-    console.log("connect a media stream....")
-
-  }
-
-  const startStream = () => {
-
-    console.log("Iniciar Streaming......");
-    stream.startStreaming();
-  };
+  // }
 
   const closeStream = () => stream.closeStreaming();
 
@@ -94,26 +102,26 @@ function Streaming() {
 
   useEffect(()=>{
 
-    if(stream === null){
-      setStream(new Emisor());
+    if(streaming && stream === null){
+      setStream(new Emisor(streaming));
     }
     
-  },[])
+  },[streaming])
 
   useEffect(()=>{
 
-    if(stream !== null){
+    if(stream){
+
+      setId(()=> stream.id);
 
       stream.onConnect = (client)=>{
-        setId(()=> stream.id);
+        
         console.log("streaming created..")
       }
 
       stream.onConnectClient = ()=>{
         console.log("connected client")
         synchronizeClient();
-
-        
       }
 
       stream.onDisconnectClient = ()=>{
@@ -127,16 +135,26 @@ function Streaming() {
         synchronizeClient();
 
       }
+      
+      stream.createStreaming({
+        title:streaming.title,
+        description:streaming.description,
+        streamingId: streaming.id
+      });
+
+      stream.connectWithMediaStream(videoRef.current);
+
+      setTitle(streaming.title);
+      setDescription(streaming.description);
+      setId(streaming.id);
 
     }
   },[stream])
 
   useEffect(()=>{
-    console.log(status);
+    // console.log(status);
     status.current.innerHTML = state;
-  },
-
-  [state]);
+  },[state]);
 
   return (<>
      
@@ -146,10 +164,12 @@ function Streaming() {
 
         <Col md='8' lg='8' xl='8'>
           <video ref={videoRef} controls autoPlay onError={(err) => console.log(err)} width={"100%"}></video>
+          <p>title: <span>{title}</span></p>
+          <p>description: <span>{description}</span></p>
           <div ref={status} className='status'></div>
-          <Button variant={'success'} className='me-2' onClick={onCreateStreaming}>Create Streaming</Button>
-          <Button variant={'primary'} className='me-2' onClick={connectWithMediaStream}>connect Medio</Button>
-          <Button variant={'warning'} className='me-2' onClick={startStream}>Start Stream</Button>
+          {/* <Button variant={'success'} className='me-2' onClick={onCreateStreaming}>Create Streaming</Button> */}
+          {/* <Button variant={'primary'} className='me-2' onClick={connectWithMediaStream}>connect Medio</Button> */}
+          {/* <Button variant={'warning'} className='me-2' onClick={startStream}>Start Stream</Button> */}
           <Button variant={'danger'} className='me-2' onClick={closeStream}>Close Stream</Button>
 
         </Col>
