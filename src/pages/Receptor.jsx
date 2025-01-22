@@ -5,35 +5,46 @@ import Chat from '../componets/chat/Chat';
 import { useLoaderData } from "react-router";
 import { is_authenticated } from '../modules/auth';
 import api from '../modules/api';
-import { create } from '../modules/auth';
+import { create,get_streaming } from '../modules/auth';
 
 
 export const loader = async(props)=>{
 
+  let result = {
+    exeption: null,
+    streaming:null
+  }
+
   try{
 
-    const connectInf = await api.get_connect_streaming(props.params.streamingId);
-    
     if(!is_authenticated()){
+
+      const connectInf = await api.get_connect_streaming(props.params.streamingId);
+      console.log("streaming que recibo de api",connectInf)
       create({
-        token :connectInf.token,
-        user  :connectInf.streaming
+        token     : connectInf.token,
+        user      : connectInf.user,
+        streaming : connectInf.streaming
       });
+
+      result.streaming = connectInf.streaming;
     }
-   
-    return connectInf;
+    else {
+      
+      result.streaming = get_streaming();
+    }
+    return result;
   }
   catch(err){
     console.log("error",err);
-    return {};
+    result.exeption = err;
+    return result;
   }
-  
-
 }
 
 function Receptor() {
 
-  const { streaming } = useLoaderData();
+  const { exeption, streaming } = useLoaderData();
   const videoRef = React.createRef();
 
   const [receptor,setReceptor] = useState(null);
@@ -45,12 +56,20 @@ function Receptor() {
 
   useEffect(()=>{
 
-    if(streaming){
+    if(streaming !== undefined){
+      console.log(streaming,streaming.id)
       setReceptor(() => new Streaming({ streamingId: streaming.id }));
     }
   },[streaming]);
 
-  
+  useEffect(()=>{
+
+    if(exeption){
+      console.log(exeption)
+    }    
+
+  },[exeption]);
+
   useEffect(()=>{
     
     if(receptor){

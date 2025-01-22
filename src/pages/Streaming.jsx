@@ -10,7 +10,7 @@ export const loader = async(props)=>{
 
   try{
 
-    if(!is_authenticated){
+    if(!is_authenticated()){
       return redirect("/");
     }
 

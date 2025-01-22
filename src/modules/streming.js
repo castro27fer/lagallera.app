@@ -1,5 +1,7 @@
 import { io } from 'socket.io-client'
 import { get_token } from './auth'
+import api from './api'
+
 const STATE = {
     CREATED : "Created",
     CREATING_THE_STREAMING : "creating_the_streaming",
@@ -97,9 +99,13 @@ export class Client {
     constructor({streamingId}){
        
       this.socket = io(this.HOST_SIGNAL, {
-        query: { token: get_token() },
         path: '/socket.io',
+        query: { token: get_token() },
+        reconnection: true, // Activa las reconexiones automáticas
+        reconnectionAttempts: 5, // Número máximo de intentos de reconexión
+        reconnectionDelay: 500, // Retraso inicial en ms
       });
+
       
       this.state = STATE.CREATED;
       this.streamingId = streamingId;
@@ -112,20 +118,22 @@ export class Client {
         this.socket.on("connect",this.onConnect);
 
         this.socket.on("disconnect", (reason, details) => {
-            console.log("disconnect......")
+            console.log(`Desconectado del servidor, razón: ${reason}`);
         });
 
 
         this.socket.on("connect_error", (error) => {
             if (this.socket.active) {
               // temporary failure, the socket will automatically try to reconnect
+              console.log("failure connect, try to reconnect")
             } else {
               // the connection was denied by the server
               // in that case, `socket.connect()` must be manually called in order to reconnect
-              console.log(error.message);
+
+                
+              console.log(error);
             }
 
-            console.log(error);
         });
 
         this.socket.on("ping", () => {
@@ -138,7 +146,7 @@ export class Client {
         });
 
         this.socket.on("reconnect", (attempt) => {
-            console.log("socket event reconnect")
+            console.log(`Reconexión exitosa en el intento ${attempt}`);
         });
 
         this.socket.on("reconnect_attempt", (attempt) => {
@@ -177,6 +185,7 @@ export class Receptor extends Client{
 
     constructor(props){
 
+        console.log(props)
       super(props);
 
       this.state = STATE.CREATED;
@@ -206,7 +215,7 @@ export class Receptor extends Client{
 
         const offer = await this.peerConnection.createOffer(OFFER_OPTIONS);
         await this.peerConnection.setLocalDescription(offer);
-
+        console.log("este es el streaming que recivo",this.streamingId)
         this.socket.emit(EVENT_SOCKET.SEND_OFFER_OF_CONNECTION,{ 
             desc : this.peerConnection.localDescription, 
             streamingId : this.streamingId 
