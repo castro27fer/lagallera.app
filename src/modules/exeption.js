@@ -1,11 +1,4 @@
-
-const STATUS = {
-    BAD_REQUEST:400,
-    ERROR:500
-};
-
 const MESSAGE_ERROR_DEFAULT = "Ocurrio un error inesperado.";
-const MESSAGE_BAD_REQUEST_GENERY = "Existen campos vacíos.";
 
 const axios_error = (ex)=>{
     return ex !== undefined ? ex.response.data : undefined;

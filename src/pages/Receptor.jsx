@@ -17,22 +17,34 @@ export const loader = async(props)=>{
 
   try{
 
-    if(!is_authenticated()){
+    const request_credential_connection = async(result)=>{
 
       const connectInf = await api.get_connect_streaming(props.params.streamingId);
-      console.log("streaming que recibo de api",connectInf)
+      
       create({
         token     : connectInf.token,
         user      : connectInf.user,
         streaming : connectInf.streaming
       });
-
       result.streaming = connectInf.streaming;
+      return result;
     }
-    else {
-      
-      result.streaming = get_streaming();
+
+    //if not authenticated
+    if(!is_authenticated()){
+      result = await request_credential_connection(result); //get credential...
     }
+    else{ // if authenticated
+      const streaming = await get_streaming(); //get streaming
+      console.log(streaming);
+      if(streaming.id !== props.params.streamingId){
+        result = await request_credential_connection(result); //get credential...
+      }
+      else{
+        result.streaming = streaming; // get streaming info of localstore...
+      }
+    }
+    // console.log("streaming que recibo de api",result)
     return result;
   }
   catch(err){
@@ -48,6 +60,7 @@ function Receptor() {
   const videoRef = React.createRef();
 
   const [receptor,setReceptor] = useState(null);
+  let numInstance = 0;
 
   const video = (event) =>{
     videoRef.current.srcObject = event.streams[0];
@@ -56,10 +69,11 @@ function Receptor() {
 
   useEffect(()=>{
 
-    if(streaming !== undefined){
-      console.log(streaming,streaming.id)
+    if(streaming && numInstance === 0){
+      numInstance++;
       setReceptor(() => new Streaming({ streamingId: streaming.id }));
     }
+    
   },[streaming]);
 
   useEffect(()=>{

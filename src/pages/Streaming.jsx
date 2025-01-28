@@ -3,7 +3,7 @@ import { Row, Col, Form, Button } from 'react-bootstrap'
 import { Emisor }  from '../modules/streming';
 import Chat from '../componets/chat/Chat';
 import { redirect, useLoaderData } from "react-router";
-import { is_authenticated } from '../modules/auth'
+import { is_authenticated, set_streaming } from '../modules/auth'
 import api from '../modules/api';
 
 export const loader = async(props)=>{
@@ -15,7 +15,7 @@ export const loader = async(props)=>{
     }
 
     const streaming = await api.get_streaming(props.params.streamingId);
-    
+    set_streaming(streaming);
     return streaming;
   }
   catch(err){

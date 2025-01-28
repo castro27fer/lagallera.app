@@ -30,3 +30,5 @@ export const get_user = () => localStorage.getItem(AUTH.USER) !== null ? JSON.pa
 export const get_photo = () => localStorage.getItem(AUTH.PHOTO);
 
 export const get_streaming = () => localStorage.getItem(AUTH.STREAMING) !== null ? JSON.parse(localStorage.getItem(AUTH.STREAMING)): null;
+
+export const set_streaming = (streaming) => localStorage.setItem(AUTH.STREAMING,JSON.stringify(streaming));
