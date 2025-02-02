@@ -60,14 +60,14 @@ export class Client {
     HOST_STUN = process.env.REACT_APP_SERVER_STUN;
     HOST_STURN = process.env.REACT_APP_SERVER_STURN
 
-    id = null;
     state = "New";
     
     socket = null;
     ICECandidates = [];
     streamingId = null;
+    certificate = null;
 
-    constructor({streamingId}){
+    constructor({streamingId,certificate}){
     
         this.socket = new SOCKET({
             host: this.HOST_SIGNAL,
@@ -76,6 +76,7 @@ export class Client {
 
       this.state = STATE.CREATED;
       this.streamingId = streamingId;
+      this.certificate = certificate;
 
     }
 
@@ -88,8 +89,30 @@ export class Client {
       this.socket.on("message", params => callback(params));
     }
 
-   
+    send_candidates = (peerConnection,socketId) =>{
+        
+        const send_candidate = (candidate,socketId)=>{
 
+            this.socket.emit(EVENT_SOCKET.SEND_CANDIDATES_OF_CONNECTION,{ 
+                candidate : candidate, 
+                socketId : socketId, 
+            });
+
+        }
+
+        //send all candidates saved...
+        peerConnection.ICECandidates.forEach((candidate)=>send_candidate(candidate,socketId));
+
+        //rewrite onicecandidate....
+        peerConnection.onicecandidate = (event)=>{
+            if(event.candidate){
+                this.socket.emit(EVENT_SOCKET.SEND_CANDIDATES_OF_CONNECTION,{ 
+                    candidate : event.candidate, 
+                    socketId : socketId, 
+                });
+            }
+        }
+    }
 }
 
 /**
@@ -97,7 +120,6 @@ export class Client {
  */
 export class Receptor extends Client{
 
-    ICECandidates = [];
 
     constructor(props){
 
@@ -117,11 +139,15 @@ export class Receptor extends Client{
 
         this.peerConnection = new RTCPeerConnectionReceptor({
             config_conection:CONFIG_CONNECTION_DEFAULT,
-            onconnectionstatechange : this.onConnectionStateChange,
-            ontrack : (event) => this.onTrack(event),
-            onicecandidate : this.onicecandidate
+            certificate : this.certificate
         });
+
         
+
+
+        this.peerConnection.onconnectionstatechange = this.onConnectionStateChange;
+        this.peerConnection.ontrack = (event) => this.onTrack(event);
+
         const desc = await this.peerConnection.offer();
     
         this.socket.emit(EVENT_SOCKET.SEND_OFFER_OF_CONNECTION,{ 
@@ -129,24 +155,26 @@ export class Receptor extends Client{
             streamingId : this.streamingId 
         });
 
-        console.log("Send offer of connection....");
+        this.send_candidates(this.peerConnection);
+        
+        // console.log("Send offer of connection....");
     }
 
     onConnectionStateChange = (event) =>{
-        console.log(this.peerConnection.connectionState);
+        // console.log(this.peerConnection.connectionState);
     }
 
     listeningAnswer = async()=>{
         this.socket.on(EVENT_SOCKET.ANSWER_OF_CONNECTION,(params) =>{
             this.receiveAnswer(params)
-            console.log("receive Answer....")
+            // console.log("receive Answer....")
         })
     }
 
     listeningICECandidates = () =>{
         this.socket.on(EVENT_SOCKET.CANDIDATES_OF_CONNECTION,(params)=>{
             this.ICECandidates.push(params.candidate);
-            console.log("receive candidates")
+            // console.log("receive candidates")
         });
     }
 
@@ -200,10 +228,7 @@ export class Emisor extends Client{
 
         this.socket.on(EVENT_SOCKET.CANDIDATES_OF_CONNECTION,(params)=>{
 
-            
             const clientAUX = this.clients.find(x => x.socketId === params.socketId);
-            console.log("socket ids",params.socketId);
-            console.log("cliente",clientAUX);
 
             if(!clientAUX){
                 console.error("client not found",clientAUX); return;
@@ -211,13 +236,9 @@ export class Emisor extends Client{
 
             if(params.candidate){
                 clientAUX.ICECandidates.push(params.candidate);
+                // console.log("received candidates...")
             }
             
-            // this.mapCandidates.push({
-            //     socketId : params.socketId, 
-            //     candidate : params.candidate
-            // });
-            // console.log("received candidates...")
         });
     }
 
@@ -229,31 +250,15 @@ export class Emisor extends Client{
         });
     }
 
+   
     aceptOffer = async(params) =>{
   
-        console.log("valores params..",params);
-        const newClient = new RTCConnectionClient(CONFIG_CONNECTION_DEFAULT,params.socketId);
+        const newClient = new RTCConnectionClient({ 
 
-        newClient.onicecandidate = (event)=>{
-            if(event.candidate){
-                this.socket.emit(EVENT_SOCKET.SEND_CANDIDATES_OF_CONNECTION,{ candidate : event.candidate, socketId : params.socketId, streamingId : this.streamingId });
-                // console.log("send candidates...")
-             }
-        }
+            keygenAlgorithm : CONFIG_CONNECTION_DEFAULT,
+            certificate : this.certificate 
 
-        newClient.onconnectionstatechange =(event) =>{
-
-            if(newClient.connectionState === "connected"){
-                this.onConnectClient();
-            }
-            else if(newClient.connectionState === "disconnected"){
-                this.onDisconnectClient();
-            }
-            else if(newClient.connectionState === "failed"){
-                this.onFailed();
-            }
-            
-        }
+        },params.socketId,this.socket);
 
         this.mediaStream.getTracks().forEach(track => {
             // console.log("add track",track,this.mediaStream)
@@ -270,17 +275,16 @@ export class Emisor extends Client{
             console.log(`Using audio device: ${audioTracks[0].label}`);
         }
 
-        await newClient.setRemoteDescription(params.desc);
-        const answer = await newClient.createAnswer();
-        await newClient.setLocalDescription(answer);
+        await newClient.acept_offer(params.desc);
 
-        await newClient.loadCandidates();
-        
         this.socket.emit(EVENT_SOCKET.SEND_ANSWER_OF_CONNECTION,{ 
             desc        : newClient.localDescription, 
             socketId    : params.socketId, // esta malo es el id del cliente
             streamingId : this.streamingId 
         });
+
+         //loader candidates of connect...
+         this.send_candidates(newClient,params.socketId);
 
         this.clients.push(newClient);
     }
@@ -321,7 +325,7 @@ export class Emisor extends Client{
         callback(this.state);
     }
 
-    onConnectClient = (client) =>{}
+    
 
     onDisconnectClient = (client) =>{}
 

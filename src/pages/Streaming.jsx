@@ -15,7 +15,7 @@ export const loader = async(props)=>{
     }
 
     const streaming = await api.get_streaming(props.params.streamingId);
-    set_streaming(streaming);
+    // console.log(streaming);
     return streaming;
   }
   catch(err){
@@ -116,22 +116,22 @@ function Streaming() {
 
       stream.onConnect = (client)=>{
         
-        console.log("streaming created..")
+        // console.log("streaming created..")
       }
 
       stream.onConnectClient = ()=>{
-        console.log("connected client")
+        // console.log("connected client")
         synchronizeClient();
       }
 
       stream.onDisconnectClient = ()=>{
-        console.log("disconnect client");
+        // console.log("disconnect client");
         synchronizeClient();
 
       }
 
       stream.onFailed = ()=>{
-        console.log("fialed client");
+        // console.log("fialed client");
         synchronizeClient();
 
       }

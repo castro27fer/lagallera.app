@@ -19,7 +19,7 @@ export const create = (data) =>{
     return; 
 }
 
-export const is_authenticated = () => get_user() !== null && get_token().trim() !== null;
+export const is_authenticated = () => get_user() && get_token();
 
 export const auth_delete = () => localStorage.clear();
 

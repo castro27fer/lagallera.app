@@ -4,6 +4,19 @@ import axios from '../../modules/axiosInterceptor';
 import { Alert, Button } from "react-bootstrap";
 import { Row, Col } from 'react-bootstrap'
 
+/**
+ * Componente de formulario
+ * @param {children} children elementos que se renderizan en el formulario
+ * @param {string} method metodo de envio del formulario
+ * @param {string} url url de envio del formulario
+ * @param {string} name nombre del formulario
+ * @param {string} className clase del formulario
+ * @param {number} cols cantidad de columnas del formulario
+ * @param {object} params información extra example {name:"name",value:"value"}
+ * @param {function} onSuccess callback de exito retorna el resultado del response
+ * @param {function} onError callback de error 
+ * @returns 
+ */
 function Form({
     children,
     method      = "POST",
@@ -11,6 +24,7 @@ function Form({
     name        = "",
     className   = "",
     cols        = 2,
+    params      = null, //información extra que el usuario no visualiza
     onSuccess   = (result) => result,
     onError     = (err) => err,
 
@@ -22,9 +36,15 @@ function Form({
 
     const [form,set_form] = useState([]);
 
+    const [auxParms,setAuxParms] = useState(null);
+
     const columnaMax = 12;
     const sizeColumn = columnaMax/cols;
 
+    /**
+     * function evento de envio del formulario
+     * @param {object} event evento del formulario
+     */
     const handleSubmit = (event) => {
 
         const form2 = event.currentTarget;
@@ -35,6 +55,13 @@ function Form({
         if (form2.checkValidity() && valid){
           
           let data = {};
+
+          if(params){
+            //params example {name:"name",value:"value"}
+            // console.log(auxParms);
+            data = {...data,...auxParms};
+            // console.log(data)
+          }
           
           form.forEach(field =>{ data[field.name] = field.value });
 
@@ -87,6 +114,10 @@ function Form({
         }
     };
 
+    /**
+     * evento de validacion
+     * @param {{streing,bool}} param0 retorna el nombre del campo y si es valido
+     */
     const onValid = ({name,valid})=>{
 
       set_form(prev_form =>{
@@ -103,6 +134,10 @@ function Form({
       });
     }
 
+    /**
+     * evento change, se dispara cuando el valor de un input cambia
+     * @param {{string,string}} param0 retorna el nombre del campo y su valor 
+     */
     const onchange = ({name,value}) =>{
       set_form(prev_form =>{
         const index = prev_form.findIndex(x =>x.name === name);
@@ -176,6 +211,13 @@ function Form({
       }
     // eslint-disable-next-line
     },[children]);
+
+    useEffect(()=>{
+      if(params){
+        // console.log(params)
+        setAuxParms(params);
+      }
+    },[params]);
 
     useEffect(()=>{
       const valid_fields = form.filter(x=>x.valid === true);

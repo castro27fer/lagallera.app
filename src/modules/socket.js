@@ -99,7 +99,7 @@ class socket{
 
     onConnect = (props)=> {
 
-        console.log("on connect...",props)
+        // console.log("on connect...",props)
         
     };
 

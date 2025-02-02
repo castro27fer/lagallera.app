@@ -20,7 +20,7 @@ export const loader = async(props)=>{
     const request_credential_connection = async(result)=>{
 
       const connectInf = await api.get_connect_streaming(props.params.streamingId);
-      
+      // console.log(connectInf);
       create({
         token     : connectInf.token,
         user      : connectInf.user,
@@ -36,7 +36,7 @@ export const loader = async(props)=>{
     }
     else{ // if authenticated
       const streaming = await get_streaming(); //get streaming
-      console.log(streaming);
+      // console.log(streaming);
       if(streaming.id !== props.params.streamingId){
         result = await request_credential_connection(result); //get credential...
       }
@@ -71,7 +71,7 @@ function Receptor() {
 
     if(streaming && numInstance === 0){
       numInstance++;
-      setReceptor(() => new Streaming({ streamingId: streaming.id }));
+      setReceptor(() => new Streaming({ streamingId: streaming.id,certificate:streaming.cerntificate }));
     }
     
   },[streaming]);

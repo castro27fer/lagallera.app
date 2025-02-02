@@ -5,53 +5,81 @@ const OFFER_OPTIONS = {
     offerToReceiveVideo: 1 
 };
 
+export class PeeerConnection extends RTCPeerConnection{
+
+    ICECandidates = [];
+
+    constructor(props){
+        super(props);
+
+
+    }
+
+    oniceconnectionstatechange  = (event) =>{
+        // console.log("candiate state",this.iceConnectionState,event)
+    }
+
+    onsignalingstatechange = (event) =>{
+        // console.log("onsignalingstatechange state",this.iceConnectionState,event)
+    }
+
+    onconnectionstatechange =(event) =>{
+
+        /*STATUS */
+        /*connected */
+        /*disconnected*/
+        /*failed */
+        // console.log("connection state",this.connectionState);
+
+        if(this.connectionState === "disconnected"){
+            this.restartIce();
+        }
+
+    }
+
+    onConnectClient = (client) =>{}
+
+    onicecandidate = async(event)=>{
+       
+        if(event.candidate){
+            this.ICECandidates.push(event.candidate);
+        }
+    }
+}
 /**
  * Conecta al streaming con el cliente
  */
-export class RTCConnectionClient extends RTCPeerConnection{
+export class RTCConnectionClient extends PeeerConnection{
 
-    ICECandidates = [];
     socketId = null;
+    socket = null;
     
-    constructor(props,socketId){
+    constructor(props,socketId,socket){
         super(props);
 
         this.socketId = socketId;
+        this.socket = socket;
     }
 
-    loadCandidates = async()=>{
-        for(let i = 0; i< this.ICECandidates.length;i++){
-          await this.addIceCandidate(this.ICECandidates[i]);
-        }
+    acept_offer = async(desc)=>{
+
+        await this.setRemoteDescription(desc);
+        const answer = await this.createAnswer();
+        await this.setLocalDescription(answer);
+
     }
-
-    // addCandidates = (candidates) =>{
-
-    //     for(let i = 0; i< candidates.length;i++){
-    //       this.addIceCandidate(candidates[i]);
-    //     }
-    
-    // }
 
 }
 
 /**
  * Conecta al cliente al streaming
  */
-export class RTCPeerConnectionReceptor extends RTCPeerConnection{
+export class RTCPeerConnectionReceptor extends PeeerConnection{
 
 
-    constructor({
-        config_conection,
-        onconnectionstatechange,
-        ontrack,
-        onicecandidate
-    }){
+    constructor(props){
 
-        super(config_conection);
-        this.onconnectionstatechange = onconnectionstatechange;
-        this.ontrack = ontrack;
-        this.onicecandidate = onicecandidate;
+        super(props);
 
     }
 
@@ -63,6 +91,5 @@ export class RTCPeerConnectionReceptor extends RTCPeerConnection{
         return local_description;
 
     }
-
 
 }
