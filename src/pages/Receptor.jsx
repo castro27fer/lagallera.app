@@ -71,7 +71,7 @@ function Receptor() {
 
     if(streaming && numInstance === 0){
       numInstance++;
-      setReceptor(() => new Streaming({ streamingId: streaming.id,certificate:streaming.cerntificate }));
+      setReceptor(() => new Streaming({ streamingId: streaming.id,certificate:streaming.certificate }));
     }
     
   },[streaming]);

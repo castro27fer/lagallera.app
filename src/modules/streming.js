@@ -67,7 +67,7 @@ export class Client {
     streamingId = null;
     certificate = null;
 
-    constructor({streamingId,certificate}){
+    constructor({streamingId, certificate}){
     
         this.socket = new SOCKET({
             host: this.HOST_SIGNAL,
@@ -81,14 +81,27 @@ export class Client {
     }
 
 
+    /**
+     * Enviar mensaje al chat
+     * @param {string} message mensaje a enviar
+     */
     sendMessage = (message) => {
       this.socket.emit(EVENT_SOCKET.CHAT_ROOM,{ message });
     };
   
+    /**
+     * Escuchando los mensajes del chat
+     * @param {function} callback function callback para escuchar los mensajes
+     */
     onListeningTheChatRoom = (callback)=>{
       this.socket.on("message", params => callback(params));
     }
 
+    /**
+     * Envia los canditados al servidor de señalización para que los reciba el receptor
+     * @param {peerConnection} peerConnection representa la conexión con un receptor
+     * @param {string} socketId Es el id del receptor
+     */
     send_candidates = (peerConnection,socketId) =>{
         
         const send_candidate = (candidate,socketId)=>{
@@ -130,6 +143,9 @@ export class Receptor extends Client{
       this.connectionInitialClient();
     }
   
+    /**
+     * Conecta al cliente al streaming aun no se ha aceptado la oferta por parte del streaming
+     */
     connectionInitialClient = async() =>{
       
         this.state = STATE.CONNECTIONG_WITH_THE_STREAMING;
@@ -164,6 +180,9 @@ export class Receptor extends Client{
         // console.log(this.peerConnection.connectionState);
     }
 
+    /**
+     * Escucha la respuesta a la oferta de conexión, enviada por el streaming
+     */
     listeningAnswer = async()=>{
         this.socket.on(EVENT_SOCKET.ANSWER_OF_CONNECTION,(params) =>{
             this.receiveAnswer(params)
@@ -171,6 +190,9 @@ export class Receptor extends Client{
         })
     }
 
+    /**
+     * Escucha las ofertas de candidatos enviado por el streaming
+     */
     listeningICECandidates = () =>{
         this.socket.on(EVENT_SOCKET.CANDIDATES_OF_CONNECTION,(params)=>{
             this.ICECandidates.push(params.candidate);
@@ -178,11 +200,18 @@ export class Receptor extends Client{
         });
     }
 
+    /**
+     * Recibe la respuesta del streaming a la oferta de conexión enviada
+     * @param {object} params respuesta del streaming
+     */
     receiveAnswer = async(params) =>{
         await this.peerConnection.setRemoteDescription(params.desc); 
         await this.loadCandidates();
     }
 
+    /**
+     * Carga los canditados enviados por el streaming
+     */
     loadCandidates = async()=>{
         
         for(let i = 0; i< this.ICECandidates.length;i++){
@@ -294,16 +323,33 @@ export class Emisor extends Client{
         
         this.startStream = "mediaStreamingConnected ";
 
-        this.mediaStream = await navigator.mediaDevices.getDisplayMedia({
-            video: {
-              width:{  ideal: 1280, max:1920, },
-              height:{ ideal:600, max:1080, },
-              frameRate:{ ideal:60,max:70, },
-            },
-            audio: false,
-        });
+       
 
-        videoRef.srcObject = this.mediaStream;
+        try{
+            this.mediaStream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                  width:{  ideal: 1280, max:1920, },
+                  height:{ ideal:600, max:1080, },
+                  frameRate:{ ideal:60,max:70, },
+                },
+                audio: false,
+            });
+            videoRef.srcObject = this.mediaStream;
+        }
+        catch(exception){
+
+            console.error(exception);
+            this.mediaStream = await navigator.mediaDevices.getDisplayMedia({
+                video: {
+                    width:{  ideal: 1280, max:1920, },
+                    height:{ ideal:600, max:1080, },
+                    frameRate:{ ideal:60,max:70, },
+                },
+                audio: false,
+            });
+            videoRef.srcObject = this.mediaStream;
+        }
+        
     }
   
     startStreaming = async()=> {

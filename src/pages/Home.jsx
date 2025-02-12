@@ -1,17 +1,21 @@
-import { is_authenticated } from '../modules/auth';
-import { redirect } from "react-router-dom";
+
+// import { redirect } from "react-router-dom";
 import { Row, Col, Card } from 'react-bootstrap';
-import FormStream from '../componets/forms/Stream'
+import FormStream,{loader as loaderStream} from '../componets/forms/Stream'
 import { useNavigate } from "react-router";
 
-export const loader = ({request})=>{
+// export const loader = async({request})=>{
     
 
-    if(!is_authenticated()){
-        return redirect("login");
-    }
-    return null;
-}
+//     if(!is_authenticated()){
+//         return redirect("login");
+//     }
+    
+//     const result =  await loaderStream({request});
+//     return result;
+// }
+
+export const loader = loaderStream;
 
 function Home(){
 

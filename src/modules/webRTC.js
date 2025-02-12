@@ -61,6 +61,10 @@ export class RTCConnectionClient extends PeeerConnection{
         this.socket = socket;
     }
 
+    /**
+     * acepta la oferta de conexión del receptor
+     * @param {object} desc descripcion de la oferta del receptor
+     */
     acept_offer = async(desc)=>{
 
         await this.setRemoteDescription(desc);
@@ -83,6 +87,10 @@ export class RTCPeerConnectionReceptor extends PeeerConnection{
 
     }
 
+    /**
+     * Crea la oferta de conexión para el streaming
+     * @returns 
+     */
     offer = async()=>{
 
         const offerAux = await this.createOffer(OFFER_OPTIONS);
