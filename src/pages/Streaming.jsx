@@ -27,6 +27,7 @@ export const loader = async(props)=>{
 
 function Streaming() {
 
+  const url = process.env.REACT_APP_URL_APP;
   const { streaming } = useLoaderData();
 
   const videoRef = React.createRef(null);
@@ -207,7 +208,9 @@ function Streaming() {
 
       </Row>
 
-      <a href={`http://localhost:3003/receptor/${id}`} target='_blank'>{`http://localhost:3003/receptor/${id}`}</a>
+      <a href={`${url}receptor/${id}`} target='_blank'>{`${url}receptor/${id}`}</a>
+      <br/>
+      <a href={`whatsapp://send?text=${url}receptor/${id}`} >Compartir en Whatsapp</a>
   </>)
 }
 
